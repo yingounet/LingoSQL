@@ -1,0 +1,582 @@
+<template>
+  <div class="dashboard-page">
+    <!-- 页面标题 -->
+    <PageHeader 
+      title="Dashboard" 
+      description="Overview of your database connections and recent activity"
+    />
+    
+    <!-- 状态卡片 -->
+    <div class="stats-cards">
+      <div class="stat-card">
+        <div class="stat-icon cpu">
+          <el-icon :size="24"><Cpu /></el-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">CPU USAGE</span>
+          <span class="stat-value">24.8%</span>
+          <span class="stat-trend success">
+            <el-icon :size="12"><Bottom /></el-icon>
+            Stable usage
+          </span>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon memory">
+          <el-icon :size="24"><Coin /></el-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">MEMORY</span>
+          <span class="stat-value">6.2 <small>GB</small></span>
+          <span class="stat-trend warning">
+            <el-icon :size="12"><Warning /></el-icon>
+            78% of allocated
+          </span>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon connections">
+          <el-icon :size="24"><ConnectionIcon /></el-icon>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">ACTIVE CONNS</span>
+          <span class="stat-value">{{ connectionStore.connections.length || 0 }}</span>
+          <span class="stat-trend success">
+            <el-icon :size="12"><Top /></el-icon>
+            +12% peak today
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 快捷操作 -->
+    <div class="quick-actions">
+      <h2 class="section-title">
+        <el-icon :size="18"><Lightning /></el-icon>
+        Quick Actions
+      </h2>
+      <div class="actions-grid">
+        <div class="action-card" @click="handleNewQuery">
+          <div class="action-icon">
+            <el-icon :size="24"><EditPen /></el-icon>
+          </div>
+          <div class="action-info">
+            <span class="action-title">New Query</span>
+            <span class="action-desc">Open SQL editor</span>
+          </div>
+        </div>
+        
+        <div class="action-card" @click="handleCreateTable">
+          <div class="action-icon">
+            <el-icon :size="24"><Grid /></el-icon>
+          </div>
+          <div class="action-info">
+            <span class="action-title">Create Table</span>
+            <span class="action-desc">Schema designer</span>
+          </div>
+        </div>
+        
+        <div class="action-card" @click="handleImportCSV">
+          <div class="action-icon">
+            <el-icon :size="24"><Upload /></el-icon>
+          </div>
+          <div class="action-info">
+            <span class="action-title">Import CSV</span>
+            <span class="action-desc">Bulk data upload</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 收藏的 SQL -->
+    <div class="recent-favorites-section">
+      <div class="recent-favorites-header">
+        <h2 class="section-title">
+          <el-icon :size="18"><Star /></el-icon>
+          收藏的 SQL
+        </h2>
+        <span class="section-subtitle">最近使用</span>
+        <router-link to="/favorites" class="view-all-link">查看全部</router-link>
+      </div>
+      <div v-loading="loadingRecentFavorites" class="recent-favorites-list">
+        <template v-if="recentFavorites.length > 0">
+          <div
+            v-for="fav in recentFavorites"
+            :key="fav.id"
+            class="favorite-chip"
+            @click="handleUseFavorite(fav)"
+            :title="fav.name"
+          >
+            <el-icon :size="14" class="chip-icon"><Document /></el-icon>
+            <span class="chip-name">{{ fav.name }}</span>
+          </div>
+        </template>
+        <div v-else-if="!loadingRecentFavorites" class="recent-favorites-empty">
+          <el-icon :size="28"><Star /></el-icon>
+          <span>暂无收藏的 SQL</span>
+          <span class="empty-hint">在 Query 中执行后可将语句加入收藏</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 数据库连接 -->
+    <div class="connections-section">
+      <div class="connections-header">
+        <h2 class="section-title">
+          <el-icon :size="18"><ConnectionIcon /></el-icon>
+          数据库连接
+        </h2>
+        <el-button type="primary" @click="handleNewConnection">
+          <el-icon><Plus /></el-icon>
+          新建连接
+        </el-button>
+      </div>
+      <ConnectionList
+        embedded
+        @new="handleNewConnection"
+        @edit="handleEditConnection"
+        @connect="handleConnect"
+      />
+    </div>
+
+    <!-- 连接表单对话框 -->
+    <ConnectionForm
+      v-model="formDialogVisible"
+      :connection-id="editingConnectionId"
+      @saved="handleSaved"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { useConnectionStore } from '@/store/connection'
+import PageHeader from '@/components/layout/PageHeader.vue'
+import ConnectionList from '@/components/connection/ConnectionList.vue'
+import ConnectionForm from '@/components/connection/ConnectionForm.vue'
+import { getFavorites, recordFavoriteUse } from '@/api/favorite'
+import type { Connection } from '@/types/connection'
+import type { Favorite } from '@/types/favorite'
+import { 
+  Cpu, 
+  Coin, 
+  Connection as ConnectionIcon, 
+  Lightning, 
+  EditPen, 
+  Grid, 
+  Upload,
+  Plus,
+  Top,
+  Bottom,
+  Warning,
+  Star,
+  Document
+} from '@element-plus/icons-vue'
+
+const router = useRouter()
+const connectionStore = useConnectionStore()
+
+// 连接表单对话框
+const formDialogVisible = ref(false)
+const editingConnectionId = ref<number | null>(null)
+
+// 快捷操作
+function handleNewQuery() {
+  router.push('/query')
+}
+
+function handleCreateTable() {
+  // TODO: 打开表设计器
+  console.log('Create table')
+}
+
+function handleImportCSV() {
+  // TODO: 打开 CSV 导入
+  console.log('Import CSV')
+}
+
+// 连接管理
+function handleNewConnection() {
+  editingConnectionId.value = null
+  formDialogVisible.value = true
+}
+
+function handleEditConnection(id: number) {
+  editingConnectionId.value = id
+  formDialogVisible.value = true
+}
+
+function handleConnect(connection: Connection) {
+  router.push({
+    path: '/database',
+    query: { connection_id: String(connection.id) }
+  })
+}
+
+function handleSaved() {
+  formDialogVisible.value = false
+}
+
+// 最近使用的收藏
+const loadingRecentFavorites = ref(false)
+const recentFavorites = ref<Favorite[]>([])
+
+function isSelectStatement(sql: string): boolean {
+  let s = sql.trim()
+  s = s.replace(/^--[^\n]*\n?/gm, '').trim()
+  s = s.replace(/\/\*[\s\S]*?\*\//g, '').trim()
+  return /^select\b/i.test(s)
+}
+
+async function loadRecentFavorites() {
+  loadingRecentFavorites.value = true
+  try {
+    const list = await getFavorites({ sort: 'last_used_at' })
+    recentFavorites.value = list.slice(0, 8)
+  } catch {
+    recentFavorites.value = []
+  } finally {
+    loadingRecentFavorites.value = false
+  }
+}
+
+async function handleUseFavorite(fav: Favorite) {
+  const needRestore =
+    !connectionStore.currentConnection ||
+    connectionStore.currentConnection.id !== fav.connection_id ||
+    (fav.database && connectionStore.currentDatabase !== fav.database)
+  if (needRestore) {
+    try {
+      const ok = await connectionStore.restoreState(fav.connection_id, fav.database || undefined)
+      if (!ok) {
+        ElMessage.error('无法切换连接或数据库')
+        return
+      }
+    } catch (e: unknown) {
+      ElMessage.error((e as Error).message || '切换连接失败')
+      return
+    }
+  }
+  try {
+    await recordFavoriteUse(fav.id)
+  } catch {
+    // 忽略记录失败，仍跳转
+  }
+  router.push({
+    path: '/query',
+    query: {
+      connection_id: String(fav.connection_id),
+      ...(fav.database ? { database: fav.database } : {}),
+    },
+    state: {
+      initialSql: fav.sql_query,
+      autoExecute: isSelectStatement(fav.sql_query),
+    },
+  })
+}
+
+// 加载数据
+onMounted(() => {
+  connectionStore.fetchConnections()
+  loadRecentFavorites()
+})
+</script>
+
+<style scoped>
+.dashboard-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* 状态卡片 */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--border-radius-medium);
+  flex-shrink: 0;
+}
+
+.stat-icon.cpu {
+  background-color: #E3F2FD;
+  color: var(--color-primary);
+}
+
+.stat-icon.memory {
+  background-color: #FFF3E0;
+  color: var(--color-warning);
+}
+
+.stat-icon.connections {
+  background-color: #E8F5E9;
+  color: var(--color-success);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.stat-value small {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.stat-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.stat-trend.success {
+  color: var(--color-success);
+}
+
+.stat-trend.warning {
+  color: var(--color-warning);
+}
+
+/* 快捷操作 */
+.quick-actions {
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-md);
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-large);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: var(--color-background-secondary);
+  border-radius: var(--border-radius-medium);
+  color: var(--color-primary);
+}
+
+.action-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.action-title {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.action-desc {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+/* 最近使用 */
+.recent-favorites-section {
+  margin-bottom: var(--spacing-xl);
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+.recent-favorites-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.recent-favorites-header .section-title {
+  margin: 0;
+}
+
+.section-subtitle {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.view-all-link {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+}
+
+.recent-favorites-list {
+  min-height: 60px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.favorite-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: var(--color-background-secondary);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  max-width: 200px;
+}
+
+.favorite-chip:hover {
+  background-color: var(--color-nav-active-bg);
+  border-color: var(--color-primary);
+}
+
+.chip-icon {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.favorite-chip:hover .chip-icon {
+  color: var(--color-primary);
+}
+
+.chip-name {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.favorite-chip:hover .chip-name {
+  color: var(--color-primary);
+}
+
+.recent-favorites-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  gap: 4px;
+  width: 100%;
+}
+
+.recent-favorites-empty .el-icon {
+  color: var(--color-text-tertiary);
+  opacity: 0.5;
+}
+
+.empty-hint {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  opacity: 0.7;
+}
+
+/* 数据库连接区域 */
+.connections-section {
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+}
+
+.connections-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.connections-header .section-title {
+  margin: 0;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

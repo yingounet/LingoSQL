@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  lingosql:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: lingosql
+    ports:
+      - "8080:8080"
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+      - DB_PATH=/data/lingosql.db
+      - JWT_SECRET=your-secret-key-change-in-production
+      - ENCRYPTION_KEY=your-encryption-key-32-chars-long!!
+    volumes:
+      - ./data:/data
+      - ./backend/config.yaml:/app/config.yaml
+    restart: unless-stopped
