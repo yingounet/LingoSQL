@@ -69,6 +69,12 @@ func (s *QueryService) Execute(userID int, req *models.QueryExecuteRequest) (*mo
 		return nil, 0, errors.New("没有可执行的 SQL 语句")
 	}
 
+	for _, stmt := range statements {
+		if dangerous, reason := utils.IsDangerousSQL(stmt); dangerous && !req.ConfirmDangerous {
+			return nil, 0, errors.New("危险 SQL 需确认: " + reason)
+		}
+	}
+
 	var response *models.QueryExecuteResponse
 	var queryID int
 	var totalRowsAffected int

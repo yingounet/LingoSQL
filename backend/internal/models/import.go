@@ -30,6 +30,7 @@ type ExecuteSQLFileRequest struct {
 	Database     string `json:"database"`
 	SQL          string `json:"sql" binding:"required"`
 	Transaction  bool   `json:"transaction,omitempty"` // 是否在事务中执行
+	ConfirmDangerous bool `json:"confirm_dangerous,omitempty"`
 }
 
 // ExecuteSQLFileResponse 执行 SQL 文件响应

@@ -514,7 +514,7 @@ func (s *ConnectionService) GetDecryptedDbConfig(id, userID int) (*models.DbConf
 	if err != nil {
 		return nil, err
 	}
-	dbConfig.PasswordEncrypted = password // 这里返回明文密码供连接使用
+	dbConfig.Password = password
 
 	return dbConfig, nil
 }

@@ -20,6 +20,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 		clientIP := c.ClientIP()
 		method := c.Request.Method
 		statusCode := c.Writer.Status()
+		requestID, _ := c.Get("request_id")
 
 		if raw != "" {
 			path = path + "?" + raw
@@ -31,6 +32,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 			"client_ip":  clientIP,
 			"method":     method,
 			"path":       path,
+			"request_id": requestID,
 		}).Info("HTTP Request")
 	}
 }

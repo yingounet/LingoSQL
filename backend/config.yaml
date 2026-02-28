@@ -7,11 +7,21 @@ database:
 
 jwt:
   secret: your-secret-key-change-in-production
-  expires_in: 720h # 30 days
+  expires_in: 24h # access token
+  refresh_expires_in: 168h # 7 days
 
 encryption:
-  key: abcdefghijklmnopqrstuvwxyz123456 # 32 characters for AES-256
+  key: abcdefghijklmnopqrstuvwxyz123456
 
 log:
   level: info # debug, info, warn, error
   format: json # json, text
+
+cors:
+  allowed_origins:
+    - "*"
+
+rate_limit:
+  enabled: false
+  default_rpm: 120
+  polling_rpm: 30

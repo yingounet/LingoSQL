@@ -149,6 +149,19 @@ func (s *ImportService) ImportData(connectionID, userID int, req *models.ImportD
 	return response, nil
 }
 
+// RunImportDataTask 异步导入任务
+func (s *ImportService) RunImportDataTask(taskID int, userID int, req *models.ImportDataRequest, taskService *TaskService) {
+	if err := taskService.Start(taskID); err != nil {
+		return
+	}
+	response, err := s.ImportData(req.ConnectionID, userID, req)
+	if err != nil {
+		_ = taskService.CompleteFailure(taskID, err)
+		return
+	}
+	_ = taskService.CompleteSuccess(taskID, response)
+}
+
 // ExecuteSQLFile 执行SQL文件
 func (s *ImportService) ExecuteSQLFile(connectionID, userID int, req *models.ExecuteSQLFileRequest) (*models.ExecuteSQLFileResponse, error) {
 	executor, _, err := s.getExecutor(connectionID, userID, req.Database)
@@ -162,6 +175,12 @@ func (s *ImportService) ExecuteSQLFile(connectionID, userID int, req *models.Exe
 	// 分割SQL语句
 	statements := utils.SplitSQLStatements(req.SQL)
 	response.ExecutedStatements = len(statements)
+
+	for _, stmt := range statements {
+		if dangerous, reason := utils.IsDangerousSQL(stmt); dangerous && !req.ConfirmDangerous {
+			return nil, errors.New("危险 SQL 需确认: " + reason)
+		}
+	}
 
 	if req.Transaction {
 		// 在事务中执行
@@ -210,4 +229,17 @@ func (s *ImportService) ExecuteSQLFile(connectionID, userID int, req *models.Exe
 	s.systemHistoryDAO.Create(history)
 
 	return response, nil
+}
+
+// RunExecuteSQLFileTask 异步执行 SQL 文件任务
+func (s *ImportService) RunExecuteSQLFileTask(taskID int, userID int, req *models.ExecuteSQLFileRequest, taskService *TaskService) {
+	if err := taskService.Start(taskID); err != nil {
+		return
+	}
+	response, err := s.ExecuteSQLFile(req.ConnectionID, userID, req)
+	if err != nil {
+		_ = taskService.CompleteFailure(taskID, err)
+		return
+	}
+	_ = taskService.CompleteSuccess(taskID, response)
 }

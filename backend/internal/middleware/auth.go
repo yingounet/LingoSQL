@@ -26,7 +26,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		token := parts[1]
-		claims, err := utils.ParseToken(token)
+		claims, err := utils.ParseAccessToken(token)
 		if err != nil {
 			utils.Unauthorized(c, "无效的认证令牌")
 			c.Abort()

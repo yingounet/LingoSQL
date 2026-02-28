@@ -247,8 +247,8 @@ func (e *MySQLExecutor) CreateUser(username, host, password string) error {
 	if err := utils.ValidateMySQLHost(host); err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("CREATE USER '%s'@'%s' IDENTIFIED BY '%s'", username, host, password)
-	_, err := e.db.Exec(sql)
+	sql := fmt.Sprintf("CREATE USER '%s'@'%s' IDENTIFIED BY ?", username, host)
+	_, err := e.db.Exec(sql, password)
 	return err
 }
 
@@ -279,8 +279,8 @@ func (e *MySQLExecutor) AlterUserPassword(username, host, newPassword string) er
 	if err := utils.ValidateMySQLHost(host); err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("ALTER USER '%s'@'%s' IDENTIFIED BY '%s'", username, host, newPassword)
-	_, err := e.db.Exec(sql)
+	sql := fmt.Sprintf("ALTER USER '%s'@'%s' IDENTIFIED BY ?", username, host)
+	_, err := e.db.Exec(sql, newPassword)
 	return err
 }
 

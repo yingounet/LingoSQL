@@ -5,6 +5,7 @@ type QueryExecuteRequest struct {
 	ConnectionID int    `json:"connection_id" binding:"required"`
 	Database     string `json:"database"`
 	SQL          string `json:"sql" binding:"required"`
+	ConfirmDangerous bool `json:"confirm_dangerous,omitempty"`
 }
 
 // QueryExecuteResponse SQL 查询执行响应

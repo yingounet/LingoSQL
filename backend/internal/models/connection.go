@@ -24,6 +24,7 @@ type DbConfig struct {
 	Database          string     `json:"database,omitempty"`
 	Username          string     `json:"username"`
 	PasswordEncrypted string     `json:"password_encrypted,omitempty"`
+	Password          string     `json:"-"`
 	Options           *DbOptions `json:"options,omitempty"`
 }
 

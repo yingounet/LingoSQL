@@ -72,6 +72,8 @@ func main() {
 	favoriteDAO := sqlite.NewFavoriteDAO(sqliteDB)
 	historyDAO := sqlite.NewHistoryDAO(sqliteDB)
 	systemHistoryDAO := sqlite.NewSystemHistoryDAO(sqliteDB)
+	auditDAO := sqlite.NewAuditDAO(sqliteDB)
+	taskDAO := sqlite.NewTaskDAO(sqliteDB)
 
 	// 初始化服务
 	authService := service.NewAuthService(userDAO)
@@ -87,13 +89,16 @@ func main() {
 	permissionAdminService := service.NewPermissionAdminService(connectionDAO, systemHistoryDAO)
 	tableAdminService := service.NewTableAdminService(connectionDAO, systemHistoryDAO)
 	importService := service.NewImportService(connectionDAO, systemHistoryDAO)
+	exportService := service.NewExportService(connectionDAO)
 	rowDataService := service.NewRowDataService(connectionDAO, systemHistoryDAO)
 	dbObjectsService := service.NewDbObjectsService(connectionDAO, systemHistoryDAO)
 	maintenanceService := service.NewMaintenanceService(connectionDAO, systemHistoryDAO)
+	auditService := service.NewAuditService(auditDAO)
+	taskService := service.NewTaskService(taskDAO)
 
 	// 初始化处理器
-	authHandler := handler.NewAuthHandler(authService)
-	connectionHandler := handler.NewConnectionHandler(connectionService)
+	authHandler := handler.NewAuthHandler(authService, auditService)
+	connectionHandler := handler.NewConnectionHandler(connectionService, auditService)
 	databaseHandler := handler.NewDatabaseHandler(databaseService)
 	tableHandler := handler.NewTableHandler(tableService)
 	queryHandler := handler.NewQueryHandler(queryService)
@@ -104,10 +109,13 @@ func main() {
 	userAdminHandler := handler.NewUserAdminHandler(userAdminService)
 	permissionAdminHandler := handler.NewPermissionAdminHandler(permissionAdminService)
 	tableAdminHandler := handler.NewTableAdminHandler(tableAdminService)
-	importHandler := handler.NewImportHandler(importService)
+	importHandler := handler.NewImportHandler(importService, taskService, auditService)
+	exportHandler := handler.NewExportHandler(taskService, exportService, auditService)
 	rowDataHandler := handler.NewRowDataHandler(rowDataService, tableService)
 	dbObjectsHandler := handler.NewDbObjectsHandler(dbObjectsService)
 	maintenanceHandler := handler.NewMaintenanceHandler(maintenanceService)
+	auditHandler := handler.NewAuditHandler(auditService)
+	taskHandler := handler.NewTaskHandler(taskService, importService, exportService)
 
 	// 启动连接池清理任务
 	db.GetPool().StartCleanup()
@@ -117,6 +125,12 @@ func main() {
 
 	// 创建路由
 	r := gin.New()
+	r.Use(middleware.RequestIDMiddleware())
+	r.Use(middleware.HTTPSOnlyMiddleware())
+	r.Use(middleware.SecurityHeadersMiddleware())
+	if cfg.RateLimit.Enabled {
+		r.Use(middleware.RateLimitMiddleware(cfg.RateLimit.DefaultRPM, time.Minute))
+	}
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(middleware.CORSMiddleware())
 	r.Use(gin.Recovery())
@@ -133,6 +147,7 @@ func main() {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.Refresh)
 			auth.POST("/logout", middleware.AuthMiddleware(), authHandler.Logout)
 			auth.GET("/me", middleware.AuthMiddleware(), authHandler.GetMe)
 		}
@@ -223,6 +238,12 @@ func main() {
 		{
 			systemHistory.GET("", systemHistoryHandler.GetSystemHistory)
 			systemHistory.DELETE("/:id", systemHistoryHandler.DeleteSystemHistory)
+		}
+
+		// 审计日志
+		auditLogs := apiAuth.Group("/audit-logs")
+		{
+			auditLogs.GET("", auditHandler.GetAuditLogs)
 		}
 
 		// 数据库管理
@@ -320,6 +341,27 @@ func main() {
 		{
 			importGroup.POST("/data", importHandler.ImportData)
 			importGroup.POST("/sql", importHandler.ExecuteSQLFile)
+			importGroup.POST("/data/async", importHandler.ImportDataAsync)
+			importGroup.POST("/sql/async", importHandler.ExecuteSQLFileAsync)
+		}
+
+		// 数据导出
+		exportGroup := apiAuth.Group("/export")
+		{
+			exportGroup.POST("/data", exportHandler.ExportDataAsync)
+		}
+
+		// 任务中心
+		tasks := apiAuth.Group("/tasks")
+		{
+			if cfg.RateLimit.Enabled {
+				tasks.Use(middleware.RateLimitMiddleware(cfg.RateLimit.PollingRPM, time.Minute))
+			}
+			tasks.GET("", taskHandler.GetTasks)
+			tasks.GET("/:id", taskHandler.GetTask)
+			tasks.POST("/:id/retry", taskHandler.RetryTask)
+			tasks.POST("/:id/cancel", taskHandler.CancelTask)
+			tasks.GET("/:id/download", taskHandler.DownloadTaskResult)
 		}
 	}
 

@@ -2,6 +2,22 @@ import axios from 'axios'
 import { useAuthStore } from '@/store/auth'
 import router from '@/router'
 
+type ApiError = Error & {
+  status?: number
+  code?: number
+  requestId?: string
+  data?: unknown
+}
+
+function buildApiError(message: string, status?: number, code?: number, requestId?: string, data?: unknown): ApiError {
+  const err = new Error(message) as ApiError
+  err.status = status
+  err.code = code
+  err.requestId = requestId
+  err.data = data
+  return err
+}
+
 const request = axios.create({
   baseURL: '/api',
   timeout: 30000,
@@ -29,7 +45,15 @@ request.interceptors.response.use(
     if (data && typeof data === 'object' && 'code' in data) {
       // 如果code不是200，抛出错误
       if (data.code !== 200) {
-        return Promise.reject(new Error(data.message || '请求失败'))
+        return Promise.reject(
+          buildApiError(
+            data.message || '请求失败',
+            response.status,
+            data.code,
+            data.request_id,
+            data,
+          ),
+        )
       }
       // 返回data字段
       return data
@@ -39,14 +63,35 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
+      const responseData = error.response.data
+      const status = error.response.status
       if (error.response.status === 401) {
         const authStore = useAuthStore()
         authStore.logout()
         router.push('/login')
       }
       // 处理业务错误（code不为200的情况）
-      if (error.response.data && error.response.data.code !== 200) {
-        return Promise.reject(new Error(error.response.data.message || '请求失败'))
+      if (responseData && responseData.code !== 200) {
+        return Promise.reject(
+          buildApiError(
+            responseData.message || '请求失败',
+            status,
+            responseData.code,
+            responseData.request_id,
+            responseData,
+          ),
+        )
+      }
+      if (status) {
+        return Promise.reject(
+          buildApiError(
+            error.message || '请求失败',
+            status,
+            responseData?.code,
+            responseData?.request_id,
+            responseData,
+          ),
+        )
       }
     }
     return Promise.reject(error)

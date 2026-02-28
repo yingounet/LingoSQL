@@ -8,44 +8,49 @@ import (
 
 // Response 统一响应结构
 type Response struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code      int         `json:"code"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data"`
+	RequestID string      `json:"request_id,omitempty"`
 }
 
 // Success 成功响应
 func Success(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, Response{
-		Code:    200,
-		Message: "操作成功",
-		Data:    data,
+		Code:      200,
+		Message:   "操作成功",
+		Data:      data,
+		RequestID: getRequestID(c),
 	})
 }
 
 // SuccessWithMessage 带消息的成功响应
 func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
 	c.JSON(http.StatusOK, Response{
-		Code:    200,
-		Message: message,
-		Data:    data,
+		Code:      200,
+		Message:   message,
+		Data:      data,
+		RequestID: getRequestID(c),
 	})
 }
 
 // Error 错误响应
 func Error(c *gin.Context, code int, message string) {
 	c.JSON(code, Response{
-		Code:    code,
-		Message: message,
-		Data:    nil,
+		Code:      code,
+		Message:   message,
+		Data:      nil,
+		RequestID: getRequestID(c),
 	})
 }
 
 // ErrorWithData 带数据的错误响应
 func ErrorWithData(c *gin.Context, code int, message string, data interface{}) {
 	c.JSON(code, Response{
-		Code:    code,
-		Message: message,
-		Data:    data,
+		Code:      code,
+		Message:   message,
+		Data:      data,
+		RequestID: getRequestID(c),
 	})
 }
 
@@ -72,4 +77,13 @@ func NotFound(c *gin.Context, message string) {
 // InternalServerError 500 错误
 func InternalServerError(c *gin.Context, message string) {
 	Error(c, http.StatusInternalServerError, message)
+}
+
+func getRequestID(c *gin.Context) string {
+	if v, exists := c.Get("request_id"); exists {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
 }

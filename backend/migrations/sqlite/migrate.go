@@ -26,6 +26,8 @@ func Migrate(dbPath string) error {
 		"002_add_system_query_history.sql",
 		"003_favorites_database_and_last_used.sql",
 		"004_connections_last_used_at.sql",
+		"005_add_user_security.sql",
+		"006_audit_and_tasks.sql",
 	}
 
 	// 依次执行每个迁移文件

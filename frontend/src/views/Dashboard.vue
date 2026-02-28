@@ -1,5 +1,15 @@
 <template>
   <div class="dashboard-page">
+    <el-alert
+      v-if="showSecurityNotice"
+      class="security-notice"
+      type="warning"
+      show-icon
+      closable
+      @close="handleDismissNotice"
+      title="安全提醒：请在部署后尽快修改默认配置"
+      description="若仍使用默认 JWT_SECRET / ENCRYPTION_KEY / ALLOWED_ORIGINS，请立即在配置或环境变量中替换为安全值。"
+    />
     <!-- 页面标题 -->
     <PageHeader 
       title="Dashboard" 
@@ -180,6 +190,9 @@ import {
 const router = useRouter()
 const connectionStore = useConnectionStore()
 
+const noticeKey = 'lingosql.security.notice.dismissed'
+const showSecurityNotice = ref(true)
+
 // 连接表单对话框
 const formDialogVisible = ref(false)
 const editingConnectionId = ref<number | null>(null)
@@ -279,8 +292,14 @@ async function handleUseFavorite(fav: Favorite) {
   })
 }
 
+function handleDismissNotice() {
+  showSecurityNotice.value = false
+  localStorage.setItem(noticeKey, '1')
+}
+
 // 加载数据
 onMounted(() => {
+  showSecurityNotice.value = localStorage.getItem(noticeKey) !== '1'
   connectionStore.fetchConnections()
   loadRecentFavorites()
 })
@@ -290,6 +309,10 @@ onMounted(() => {
 .dashboard-page {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.security-notice {
+  margin-bottom: var(--spacing-lg);
 }
 
 /* 状态卡片 */

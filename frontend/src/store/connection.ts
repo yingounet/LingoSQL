@@ -131,20 +131,30 @@ export const useConnectionStore = defineStore('connection', () => {
   async function connectTo(id: number): Promise<void> {
     // 更新最后使用时间
     await connectionApi.updateLastUsed(id)
-    
-    // 设置当前连接
+
     const connection = connections.value.find(c => c.id === id)
-    if (connection) {
-      currentConnection.value = connection
-      connection.last_used_at = new Date().toISOString()
-      
-      // 获取数据库列表
-      await fetchDatabases(id)
+    if (!connection) {
+      throw new Error('连接不存在')
+    }
+
+    // 先设置当前连接，便于后续数据库/表加载
+    currentConnection.value = connection
+    connection.last_used_at = new Date().toISOString()
+
+    try {
+      // 获取数据库列表，失败则回滚连接状态
+      await fetchDatabases(id, true)
+    } catch (error) {
+      currentConnection.value = null
+      currentDatabase.value = null
+      databases.value = []
+      tables.value = []
+      throw error
     }
   }
 
   // 获取数据库列表
-  async function fetchDatabases(connectionId: number): Promise<void> {
+  async function fetchDatabases(connectionId: number, throwOnError = false): Promise<void> {
     loadingDatabases.value = true
     try {
       databases.value = await databaseApi.getDatabases(connectionId)
@@ -155,6 +165,9 @@ export const useConnectionStore = defineStore('connection', () => {
     } catch (error) {
       console.error('获取数据库列表失败:', error)
       databases.value = []
+      if (throwOnError) {
+        throw error
+      }
     } finally {
       loadingDatabases.value = false
     }

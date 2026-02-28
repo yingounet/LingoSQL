@@ -147,6 +147,8 @@ async function checkAdminPermission() {
     hasAdminPermission.value = false
     console.error('权限检查失败:', error)
     console.error('错误详情:', error.response?.data || error.message)
+    const requestId = error?.requestId ? `，请求ID: ${error.requestId}` : ''
+    ElMessage.error((error?.message || '权限检查失败') + requestId)
   } finally {
     checkingPermission.value = false
   }

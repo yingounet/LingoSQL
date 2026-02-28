@@ -11,10 +11,14 @@ import (
 
 type ConnectionHandler struct {
 	connectionService *service.ConnectionService
+	auditService      *service.AuditService
 }
 
-func NewConnectionHandler(connectionService *service.ConnectionService) *ConnectionHandler {
-	return &ConnectionHandler{connectionService: connectionService}
+func NewConnectionHandler(connectionService *service.ConnectionService, auditService *service.AuditService) *ConnectionHandler {
+	return &ConnectionHandler{
+		connectionService: connectionService,
+		auditService:      auditService,
+	}
 }
 
 // GetConnections 获取连接列表
@@ -105,6 +109,10 @@ func (h *ConnectionHandler) CreateConnection(c *gin.Context) {
 		utils.BadRequest(c, err.Error())
 		return
 	}
+	h.auditService.Record(userID, "connection.create", "connection", &conn.ID, true, "", gin.H{
+		"name": conn.Name,
+		"type": conn.DBType,
+	})
 
 	// 获取详情响应
 	response, err := h.connectionService.GetDetail(conn.ID, userID)
@@ -152,6 +160,9 @@ func (h *ConnectionHandler) UpdateConnection(c *gin.Context) {
 		utils.BadRequest(c, err.Error())
 		return
 	}
+	h.auditService.Record(userID, "connection.update", "connection", &conn.ID, true, "", gin.H{
+		"name": conn.Name,
+	})
 
 	// 获取详情响应
 	response, err := h.connectionService.GetDetail(conn.ID, userID)
@@ -180,6 +191,7 @@ func (h *ConnectionHandler) DeleteConnection(c *gin.Context) {
 		utils.BadRequest(c, err.Error())
 		return
 	}
+	h.auditService.Record(userID, "connection.delete", "connection", &id, true, "", nil)
 
 	utils.SuccessWithMessage(c, "连接删除成功", nil)
 }
@@ -202,6 +214,7 @@ func (h *ConnectionHandler) TestConnection(c *gin.Context) {
 		utils.BadRequest(c, err.Error())
 		return
 	}
+	h.auditService.Record(userID, "connection.test", "connection", &id, result.Connected, result.Error, nil)
 
 	if result.Connected {
 		utils.SuccessWithMessage(c, "连接测试成功", result)
@@ -227,11 +240,19 @@ func (h *ConnectionHandler) TestConnectionConfig(c *gin.Context) {
 		}
 	}
 
+	userID, ok := GetUserID(c)
+	if !ok {
+		return
+	}
+
 	result, err := h.connectionService.TestConfig(&req)
 	if err != nil {
 		utils.InternalServerError(c, err.Error())
 		return
 	}
+	h.auditService.Record(userID, "connection.test_config", "connection", nil, result.Connected, result.Error, gin.H{
+		"type": req.DBType,
+	})
 
 	if result.Connected {
 		utils.SuccessWithMessage(c, "连接测试成功", result)
@@ -278,6 +299,7 @@ func (h *ConnectionHandler) SetDefaultConnection(c *gin.Context) {
 		utils.BadRequest(c, err.Error())
 		return
 	}
+	h.auditService.Record(userID, "connection.set_default", "connection", &id, true, "", nil)
 
 	utils.SuccessWithMessage(c, "默认连接设置成功", nil)
 }

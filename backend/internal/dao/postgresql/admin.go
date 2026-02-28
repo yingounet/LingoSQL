@@ -205,8 +205,8 @@ func (e *PostgreSQLExecutor) CreateUser(username, host, password string) error {
 	if err := utils.ValidateMySQLUsername(username); err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("CREATE USER \"%s\" WITH PASSWORD '%s'", username, password)
-	_, err := e.db.Exec(sql)
+	sql := fmt.Sprintf("CREATE USER \"%s\" WITH PASSWORD $1", username)
+	_, err := e.db.Exec(sql, password)
 	return err
 }
 
@@ -225,8 +225,8 @@ func (e *PostgreSQLExecutor) AlterUserPassword(username, host, newPassword strin
 	if err := utils.ValidateMySQLUsername(username); err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("ALTER USER \"%s\" WITH PASSWORD '%s'", username, newPassword)
-	_, err := e.db.Exec(sql)
+	sql := fmt.Sprintf("ALTER USER \"%s\" WITH PASSWORD $1", username)
+	_, err := e.db.Exec(sql, newPassword)
 	return err
 }
 

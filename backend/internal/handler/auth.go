@@ -9,10 +9,14 @@ import (
 
 type AuthHandler struct {
 	authService *service.AuthService
+	auditService *service.AuditService
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *service.AuthService, auditService *service.AuditService) *AuthHandler {
+	return &AuthHandler{
+		authService:  authService,
+		auditService: auditService,
+	}
 }
 
 // Register 用户注册
@@ -23,11 +27,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	user, token, err := h.authService.Register(&req)
+	user, accessToken, refreshToken, err := h.authService.Register(&req)
 	if err != nil {
 		utils.BadRequest(c, err.Error())
 		return
 	}
+	h.auditService.Record(user.ID, "auth.register", "user", &user.ID, true, "", gin.H{
+		"username": user.Username,
+	})
 
 	utils.SuccessWithMessage(c, "注册成功", gin.H{
 		"user": models.UserResponse{
@@ -36,7 +43,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			Email:     user.Email,
 			CreatedAt: user.CreatedAt,
 		},
-		"token": token,
+		"token":         accessToken,
+		"refresh_token": refreshToken,
 	})
 }
 
@@ -48,11 +56,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, token, err := h.authService.Login(&req)
+	user, accessToken, refreshToken, err := h.authService.Login(&req)
 	if err != nil {
 		utils.Unauthorized(c, err.Error())
 		return
 	}
+	h.auditService.Record(user.ID, "auth.login", "user", &user.ID, true, "", nil)
 
 	utils.SuccessWithMessage(c, "登录成功", gin.H{
 		"user": models.UserResponse{
@@ -61,12 +70,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			Email:     user.Email,
 			CreatedAt: user.CreatedAt,
 		},
-		"token": token,
+		"token":         accessToken,
+		"refresh_token": refreshToken,
 	})
 }
 
 // Logout 用户登出
 func (h *AuthHandler) Logout(c *gin.Context) {
+	userID, ok := GetUserID(c)
+	if ok {
+		h.auditService.Record(userID, "auth.logout", "user", &userID, true, "", nil)
+	}
 	utils.SuccessWithMessage(c, "登出成功", nil)
 }
 
@@ -87,5 +101,24 @@ func (h *AuthHandler) GetMe(c *gin.Context) {
 		Username:  user.Username,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
+	})
+}
+
+// Refresh 刷新访问令牌
+func (h *AuthHandler) Refresh(c *gin.Context) {
+	var req models.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	accessToken, err := h.authService.RefreshToken(req.RefreshToken)
+	if err != nil {
+		utils.Unauthorized(c, err.Error())
+		return
+	}
+
+	utils.SuccessWithMessage(c, "刷新成功", gin.H{
+		"token": accessToken,
 	})
 }
