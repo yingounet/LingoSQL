@@ -351,6 +351,34 @@ func main() {
 			exportGroup.POST("/data", exportHandler.ExportDataAsync)
 		}
 
+		// 数据导入/导出（文档路径）
+		dataGroup := apiAuth.Group("/data")
+		{
+			exportDoc := dataGroup.Group("/export")
+			{
+				exportDoc.POST("", exportHandler.ExportDataSync)
+				exportDoc.POST("/async", exportHandler.ExportDataAsyncDoc)
+				exportDoc.GET("/async", exportHandler.ListExportTasks)
+				exportDoc.GET("/async/:id", exportHandler.GetExportTask)
+				exportDoc.POST("/async/:id/cancel", exportHandler.CancelExportTask)
+				exportDoc.POST("/async/:id/retry", exportHandler.RetryExportTask)
+				exportDoc.GET("/async/:id/errors", exportHandler.GetExportErrors)
+				exportDoc.GET("/:id", taskHandler.DownloadTaskResult)
+			}
+
+			importDoc := dataGroup.Group("/import")
+			{
+				importDoc.POST("", importHandler.ImportData)
+				importDoc.POST("/preview", importHandler.ImportDataPreview)
+				importDoc.POST("/async", importHandler.ImportDataAsyncDoc)
+				importDoc.GET("", importHandler.ListImportTasks)
+				importDoc.GET("/:id", importHandler.GetImportTask)
+				importDoc.POST("/:id/cancel", importHandler.CancelImportTask)
+				importDoc.POST("/:id/retry", importHandler.RetryImportTask)
+				importDoc.GET("/:id/errors", importHandler.GetImportErrors)
+			}
+		}
+
 		// 任务中心
 		tasks := apiAuth.Group("/tasks")
 		{

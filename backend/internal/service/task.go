@@ -99,3 +99,16 @@ func (s *TaskService) ListByUser(userID int, page, pageSize int) (*models.TaskLi
 		PageSize: pageSize,
 	}, nil
 }
+
+func (s *TaskService) ListByUserAndType(userID int, taskType string, page, pageSize int) (*models.TaskListResponse, error) {
+	list, total, err := s.taskDAO.ListByUserAndType(userID, taskType, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return &models.TaskListResponse{
+		List:     list,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	}, nil
+}

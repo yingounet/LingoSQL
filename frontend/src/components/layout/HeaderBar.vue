@@ -21,15 +21,27 @@
     
     <!-- 中间导航 -->
     <nav class="header-nav">
-      <router-link 
-        v-for="item in navItems" 
+      <el-tooltip
+        v-for="item in navItems"
         :key="item.path"
-        :to="getNavRoute(item.path)"
-        class="nav-item"
-        :class="{ active: isActive(item.path) }"
+        :content="getDisabledReason(item)"
+        :disabled="!isNavDisabled(item)"
+        placement="bottom"
       >
-        {{ item.label }}
-      </router-link>
+        <span>
+          <router-link
+            v-if="!isNavDisabled(item)"
+            :to="getNavRoute(item.path)"
+            class="nav-item"
+            :class="{ active: isActive(item.path) }"
+          >
+            {{ item.label }}
+          </router-link>
+          <span v-else class="nav-item disabled">
+            {{ item.label }}
+          </span>
+        </span>
+      </el-tooltip>
     </nav>
     
     <!-- 右侧区域 -->
@@ -72,6 +84,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import { useConnectionStore } from '@/store/connection'
 import { useTheme } from '@/composables/useTheme'
 import { 
   Menu, 
@@ -96,6 +109,7 @@ defineEmits<{
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const connectionStore = useConnectionStore()
 const { theme, toggleTheme } = useTheme()
 
 const searchKeyword = ref('')
@@ -103,13 +117,31 @@ const searchKeyword = ref('')
 // 导航菜单配置
 const navItems = [
   { path: '/', label: 'Dashboard' },
-  { path: '/database', label: 'Database' },
-  { path: '/schema', label: 'Schema' },
-  { path: '/rowdata', label: 'Data' },
+  { path: '/database', label: 'Database', requiresConnection: true },
+  { path: '/schema', label: 'Schema', requiresConnection: true, requiresDatabase: true },
+  { path: '/rowdata', label: 'Data', requiresConnection: true, requiresDatabase: true },
   { path: '/history', label: 'History' },
   { path: '/favorites', label: '收藏' },
-  { path: '/query', label: 'Query' }
+  { path: '/query', label: 'Query', requiresConnection: true }
 ]
+const hasConnection = computed(() => !!connectionStore.currentConnection)
+const hasDatabase = computed(() => !!connectionStore.currentDatabase)
+
+function isNavDisabled(item: { requiresConnection?: boolean; requiresDatabase?: boolean }) {
+  if (item.requiresConnection && !hasConnection.value) return true
+  if (item.requiresDatabase && !hasDatabase.value) return true
+  return false
+}
+
+function getDisabledReason(item: { requiresConnection?: boolean; requiresDatabase?: boolean }) {
+  if (item.requiresDatabase && !hasDatabase.value) {
+    return '请先选择数据库'
+  }
+  if (item.requiresConnection && !hasConnection.value) {
+    return '请先建立连接'
+  }
+  return ''
+}
 
 // 用户名首字母
 const userInitial = computed(() => {
@@ -290,6 +322,12 @@ function handleUserCommand(command: string) {
   color: var(--color-primary);
   font-weight: 600;
   background-color: var(--color-nav-active-bg);
+}
+
+.nav-item.disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  background-color: transparent;
 }
 
 /* 右侧区域 */

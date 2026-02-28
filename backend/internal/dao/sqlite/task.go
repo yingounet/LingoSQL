@@ -130,3 +130,48 @@ func (dao *TaskDAO) ListByUser(userID int, page, pageSize int) ([]models.Task, i
 	}
 	return tasks, total, nil
 }
+
+func (dao *TaskDAO) ListByUserAndType(userID int, taskType string, page, pageSize int) ([]models.Task, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+
+	var total int
+	if err := dao.db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE user_id = ? AND type = ?`, userID, taskType).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	query := `SELECT id, user_id, type, status, progress, payload, result, error_message, created_at, updated_at, started_at, finished_at
+	          FROM tasks WHERE user_id = ? AND type = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	rows, err := dao.db.Query(query, userID, taskType, pageSize, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	tasks := make([]models.Task, 0)
+	for rows.Next() {
+		var task models.Task
+		var startedAt sql.NullTime
+		var finishedAt sql.NullTime
+		if err := rows.Scan(
+			&task.ID, &task.UserID, &task.Type, &task.Status, &task.Progress,
+			&task.Payload, &task.Result, &task.ErrorMessage,
+			&task.CreatedAt, &task.UpdatedAt, &startedAt, &finishedAt,
+		); err != nil {
+			continue
+		}
+		if startedAt.Valid {
+			task.StartedAt = &startedAt.Time
+		}
+		if finishedAt.Valid {
+			task.FinishedAt = &finishedAt.Time
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, total, nil
+}
