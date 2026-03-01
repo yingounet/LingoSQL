@@ -2,7 +2,8 @@
  * 主题切换组合式函数
  */
 
-import { ref, watch, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { cssVariables, darkCssVariables } from '@/utils/theme'
 
 export type Theme = 'light' | 'dark'
 
@@ -25,6 +26,11 @@ export function useTheme() {
   // 应用主题
   function applyTheme() {
     document.documentElement.setAttribute('data-theme', theme.value)
+    const variables = theme.value === 'dark' ? darkCssVariables : cssVariables
+    const root = document.documentElement
+    Object.entries(variables).forEach(([key, value]) => {
+      root.style.setProperty(key, value)
+    })
     if (theme.value === 'dark') {
       document.documentElement.classList.add('dark')
     } else {

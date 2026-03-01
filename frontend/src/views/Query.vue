@@ -305,6 +305,7 @@ import {
 import * as monaco from 'monaco-editor'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import { useConnectionStore } from '@/store/connection'
+import { useTheme } from '@/composables/useTheme'
 import { 
   executeQuery, 
   explainQuery,
@@ -321,6 +322,7 @@ import { registerSqlCompletionProvider } from '@/utils/monacoSqlCompletion'
 // ==================== Store ====================
 
 const connectionStore = useConnectionStore()
+const { theme: uiTheme } = useTheme()
 
 // ==================== 状态 ====================
 
@@ -464,7 +466,7 @@ function initEditor() {
   editor = monaco.editor.create(editorContainer.value, {
     value: '-- 在此输入 SQL 语句\nSELECT * FROM ',
     language: 'sql',
-    theme: 'vs', // 浅色主题
+    theme: uiTheme.value === 'dark' ? 'vs-dark' : 'vs',
     minimap: { enabled: false },
     lineNumbers: 'on',
     automaticLayout: true,
@@ -514,6 +516,11 @@ function initEditor() {
 
   // 注册自动补全提供者
   updateCompletionProvider()
+}
+
+function applyEditorTheme() {
+  if (!editor) return
+  monaco.editor.setTheme(uiTheme.value === 'dark' ? 'vs-dark' : 'vs')
 }
 
 // 更新选中状态
@@ -899,6 +906,10 @@ onActivated(() => {
   applyInitialSqlFromState()
 })
 
+watch(uiTheme, () => {
+  applyEditorTheme()
+})
+
 // 监听连接和数据库变化，清除结果并更新自动补全
 watch(
   [
@@ -961,7 +972,7 @@ watch(
 /* ==================== 下拉菜单选中项 ==================== */
 :deep(.el-dropdown-menu__item.is-active) {
   color: var(--color-primary);
-  background-color: var(--color-primary-light, rgba(10, 120, 242, 0.1));
+  background-color: var(--color-primary-soft);
 }
 
 /* ==================== 卡片通用样式 ==================== */

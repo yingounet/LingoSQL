@@ -1398,7 +1398,7 @@ async function handleSaveIndex() {
   font-size: var(--font-size-small);
   padding: var(--spacing-md) var(--spacing-lg);
   margin: 0;
-  background-color: #fff;
+  background-color: var(--color-background-secondary);
   border-radius: var(--border-radius-small);
   overflow-x: auto;
   white-space: pre;

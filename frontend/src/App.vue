@@ -3,16 +3,6 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { cssVariables } from '@/utils/theme'
-
-// 应用 CSS 变量到根元素
-onMounted(() => {
-  const root = document.documentElement
-  Object.entries(cssVariables).forEach(([key, value]) => {
-    root.style.setProperty(key, value)
-  })
-})
 </script>
 
 <style>
@@ -26,6 +16,8 @@ onMounted(() => {
   /* 颜色系统 */
   --color-primary: #0A78F2;
   --color-primary-fallback: #409EFF;
+  --color-primary-hover: #0969d9;
+  --color-primary-active: #085bbf;
   --color-background: #FFFFFF;
   --color-background-secondary: #F5F5F5;
   --color-background-tertiary: #FAFAFA;
@@ -40,6 +32,10 @@ onMounted(() => {
   --color-border: #E0E0E0;
   --color-border-light: #DCDFE6;
   --color-nav-active-bg: #E3F2FD;
+  --color-primary-soft: #E3F2FD;
+  --color-warning-soft: #FFF3E0;
+  --color-success-soft: #E8F5E9;
+  --color-error: #F56C6C;
 
   /* 字体系统 */
   --font-family-ui: Inter, 'Helvetica Neue', Roboto, Arial, sans-serif;
@@ -71,6 +67,39 @@ onMounted(() => {
   --shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
   --shadow-strong: 0 4px 16px rgba(0, 0, 0, 0.15);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --color-primary: #4C8DFF;
+  --color-primary-fallback: #4C8DFF;
+  --color-primary-hover: #5A9BFF;
+  --color-primary-active: #3B7BE6;
+  --color-background: #0F1115;
+  --color-background-secondary: #151A21;
+  --color-background-tertiary: #1B212B;
+  --color-success: #4ADE80;
+  --color-warning: #FBBF24;
+  --color-danger: #F87171;
+  --color-info: #94A3B8;
+  --color-text-primary: #E5E7EB;
+  --color-text-secondary: #CBD5E1;
+  --color-text-tertiary: #94A3B8;
+  --color-placeholder: #64748B;
+  --color-border: #2B3440;
+  --color-border-light: #334155;
+  --color-nav-active-bg: #1F2937;
+  --color-primary-soft: rgba(76, 141, 255, 0.16);
+  --color-warning-soft: rgba(251, 191, 36, 0.16);
+  --color-success-soft: rgba(74, 222, 128, 0.16);
+  --color-error: #F87171;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-strong: 0 4px 16px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
 }
 
 body {

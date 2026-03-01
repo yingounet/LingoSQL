@@ -344,17 +344,17 @@ onMounted(() => {
 }
 
 .stat-icon.cpu {
-  background-color: #E3F2FD;
+  background-color: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
 .stat-icon.memory {
-  background-color: #FFF3E0;
+  background-color: var(--color-warning-soft);
   color: var(--color-warning);
 }
 
 .stat-icon.connections {
-  background-color: #E8F5E9;
+  background-color: var(--color-success-soft);
   color: var(--color-success);
 }
 
