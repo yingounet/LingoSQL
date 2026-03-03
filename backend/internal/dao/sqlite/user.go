@@ -35,6 +35,23 @@ func (dao *UserDAO) Create(user *models.User) error {
 	return nil
 }
 
+// CreateWithTx 在事务中创建用户
+func (dao *UserDAO) CreateWithTx(tx *sql.Tx, user *models.User) error {
+	query := `INSERT INTO users (username, email, password_hash, failed_login_count, last_failed_login_at, locked_until, created_at, updated_at) 
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	result, err := tx.Exec(query, user.Username, user.Email, user.PasswordHash,
+		0, nil, nil, time.Now(), time.Now())
+	if err != nil {
+		return err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	user.ID = int(id)
+	return nil
+}
+
 // GetByID 根据 ID 获取用户
 func (dao *UserDAO) GetByID(id int) (*models.User, error) {
 	user := &models.User{}
@@ -111,6 +128,17 @@ func (dao *UserDAO) GetByEmail(email string) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+// Count 返回用户总数
+func (dao *UserDAO) Count() (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM users`
+	err := dao.db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // ExistsByUsername 检查用户名是否存在

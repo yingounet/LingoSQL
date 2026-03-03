@@ -21,7 +21,7 @@
             登录
           </el-button>
         </el-form-item>
-        <el-form-item>
+        <el-form-item v-if="allowRegistration !== false">
           <el-link type="primary" @click="$router.push('/register')">还没有账号？立即注册</el-link>
         </el-form-item>
       </el-form>
@@ -30,16 +30,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/store/auth'
+import { getInstallStatus } from '@/api/install'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const allowRegistration = ref<boolean | undefined>(undefined)
+
+onMounted(async () => {
+  try {
+    const res = await getInstallStatus()
+    if (res.data.installed && typeof res.data.allow_registration === 'boolean') {
+      allowRegistration.value = res.data.allow_registration
+    } else {
+      allowRegistration.value = true
+    }
+  } catch {
+    allowRegistration.value = true
+  }
+})
 
 const form = reactive({
   username: '',

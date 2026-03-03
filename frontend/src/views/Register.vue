@@ -4,7 +4,21 @@
       <template #header>
         <h2>注册 LingoSQL</h2>
       </template>
-      <el-form :model="form" :rules="rules" ref="formRef" @submit.prevent="handleRegister">
+      <el-alert
+        v-if="allowRegistration === false"
+        title="系统已关闭公开注册"
+        type="info"
+        description="请联系管理员获取账号，或使用已有账号登录。"
+        show-icon
+        class="register-alert"
+      />
+      <el-form
+        v-else
+        :model="form"
+        :rules="rules"
+        ref="formRef"
+        @submit.prevent="handleRegister"
+      >
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" placeholder="请输入用户名（至少3个字符）" />
         </el-form-item>
@@ -15,7 +29,7 @@
           <el-input
             v-model="form.password"
             type="password"
-            placeholder="请输入密码（至少6个字符）"
+            placeholder="至少 8 位，需包含大小写字母与数字"
           />
         </el-form-item>
         <el-form-item label="确认密码" prop="confirmPassword">
@@ -34,21 +48,39 @@
           <el-link type="primary" @click="$router.push('/login')">已有账号？立即登录</el-link>
         </el-form-item>
       </el-form>
+      <div v-if="allowRegistration === false" class="register-back">
+        <el-link type="primary" @click="$router.push('/login')">返回登录</el-link>
+      </div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/store/auth'
+import { getInstallStatus } from '@/api/install'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const allowRegistration = ref<boolean | undefined>(undefined)
+
+onMounted(async () => {
+  try {
+    const res = await getInstallStatus()
+    if (res.data.installed && typeof res.data.allow_registration === 'boolean') {
+      allowRegistration.value = res.data.allow_registration
+    } else {
+      allowRegistration.value = true
+    }
+  } catch {
+    allowRegistration.value = true
+  }
+})
 
 const form = reactive({
   username: '',
@@ -76,7 +108,12 @@ const rules: FormRules = {
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少 6 个字符', trigger: 'blur' },
+    { min: 8, message: '密码长度至少 8 位', trigger: 'blur' },
+    {
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+      message: '密码需包含大小写字母与数字',
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -85,7 +122,7 @@ const rules: FormRules = {
 }
 
 const handleRegister = async () => {
-  if (!formRef.value) return
+  if (!formRef.value || allowRegistration.value === false) return
 
   await formRef.value.validate(async (valid) => {
     if (valid) {
@@ -179,5 +216,14 @@ const handleRegister = async () => {
 
 .register-card :deep(.el-link) {
   font-size: var(--font-size-small);
+}
+
+.register-alert {
+  margin-bottom: var(--spacing-lg);
+}
+
+.register-back {
+  margin-top: var(--spacing-lg);
+  text-align: center;
 }
 </style>

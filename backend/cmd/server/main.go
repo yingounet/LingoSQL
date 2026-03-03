@@ -74,6 +74,7 @@ func main() {
 	systemHistoryDAO := sqlite.NewSystemHistoryDAO(sqliteDB)
 	auditDAO := sqlite.NewAuditDAO(sqliteDB)
 	taskDAO := sqlite.NewTaskDAO(sqliteDB)
+	systemSettingsDAO := sqlite.NewSystemSettingsDAO(sqliteDB)
 
 	// 初始化服务
 	authService := service.NewAuthService(userDAO)
@@ -95,9 +96,16 @@ func main() {
 	maintenanceService := service.NewMaintenanceService(connectionDAO, systemHistoryDAO)
 	auditService := service.NewAuditService(auditDAO)
 	taskService := service.NewTaskService(taskDAO)
+	systemSettingsService := service.NewSystemSettingsService(systemSettingsDAO)
+	installService := service.NewInstallService(sqliteDB, userDAO, systemSettingsDAO)
+
+	// 从 system_settings 覆盖配置（已安装时）
+	if err := systemSettingsService.ApplyToConfig(); err != nil {
+		log.Printf("警告: 加载系统配置失败: %v", err)
+	}
 
 	// 初始化处理器
-	authHandler := handler.NewAuthHandler(authService, auditService)
+	authHandler := handler.NewAuthHandler(authService, auditService, systemSettingsService)
 	connectionHandler := handler.NewConnectionHandler(connectionService, auditService)
 	databaseHandler := handler.NewDatabaseHandler(databaseService)
 	tableHandler := handler.NewTableHandler(tableService)
@@ -116,6 +124,7 @@ func main() {
 	maintenanceHandler := handler.NewMaintenanceHandler(maintenanceService)
 	auditHandler := handler.NewAuditHandler(auditService)
 	taskHandler := handler.NewTaskHandler(taskService, importService, exportService)
+	installHandler := handler.NewInstallHandler(installService, auditService, systemSettingsService)
 
 	// 启动连接池清理任务
 	db.GetPool().StartCleanup()
@@ -143,6 +152,13 @@ func main() {
 	// 认证路由（不需要认证）
 	api := r.Group("/api")
 	{
+		// 安装引导（无需认证）
+		install := api.Group("/install")
+		{
+			install.GET("/status", installHandler.GetStatus)
+			install.POST("/setup", installHandler.Setup)
+		}
+
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", authHandler.Register)

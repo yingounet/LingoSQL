@@ -28,6 +28,7 @@ func Migrate(dbPath string) error {
 		"004_connections_last_used_at.sql",
 		"005_add_user_security.sql",
 		"006_audit_and_tasks.sql",
+		"007_system_settings.sql",
 	}
 
 	// 依次执行每个迁移文件

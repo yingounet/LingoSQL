@@ -8,19 +8,26 @@ import (
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
-	auditService *service.AuditService
+	authService         *service.AuthService
+	auditService        *service.AuditService
+	systemSettingsService *service.SystemSettingsService
 }
 
-func NewAuthHandler(authService *service.AuthService, auditService *service.AuditService) *AuthHandler {
+func NewAuthHandler(authService *service.AuthService, auditService *service.AuditService, systemSettingsService *service.SystemSettingsService) *AuthHandler {
 	return &AuthHandler{
-		authService:  authService,
-		auditService: auditService,
+		authService:           authService,
+		auditService:          auditService,
+		systemSettingsService: systemSettingsService,
 	}
 }
 
 // Register 用户注册
 func (h *AuthHandler) Register(c *gin.Context) {
+	if !h.systemSettingsService.AllowRegistration() {
+		utils.Forbidden(c, "系统已关闭公开注册")
+		return
+	}
+
 	var req models.UserCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.BadRequest(c, "请求参数错误: "+err.Error())

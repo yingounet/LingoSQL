@@ -1,9 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import { getInstallStatus } from '@/api/install'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    // 安装引导（首次部署时）
+    {
+      path: '/install',
+      name: 'Install',
+      component: () => import('@/views/Install.vue'),
+      meta: { requiresAuth: false },
+    },
     // 公开页面（无需认证）
     {
       path: '/login',
@@ -109,13 +117,29 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
-  const requiresAuth = to.meta.requiresAuth !== false
+  const installCheckPaths = ['/install', '/login', '/register']
 
+  if (installCheckPaths.includes(to.path)) {
+    try {
+      const res = await getInstallStatus()
+      const installed = res.data.installed
+      if (to.path === '/install' && installed) {
+        return next(authStore.isAuthenticated ? '/' : '/login')
+      }
+      if ((to.path === '/login' || to.path === '/register') && !installed) {
+        return next('/install')
+      }
+    } catch {
+      // 接口失败时允许继续，避免阻塞
+    }
+  }
+
+  const requiresAuth = to.meta.requiresAuth !== false
   if (requiresAuth && !authStore.isAuthenticated) {
     next('/login')
-  } else if (!requiresAuth && authStore.isAuthenticated && (to.path === '/login' || to.path === '/register')) {
+  } else if (!requiresAuth && authStore.isAuthenticated && (to.path === '/login' || to.path === '/register' || to.path === '/install')) {
     next('/')
   } else {
     next()
