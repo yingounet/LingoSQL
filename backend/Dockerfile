@@ -1,6 +1,9 @@
 # 构建阶段
 FROM golang:1.21-alpine AS builder
 
+# go-sqlite3 需要 CGO，安装 gcc 和 sqlite-dev
+RUN apk add --no-cache gcc musl-dev sqlite-dev
+
 WORKDIR /app
 
 # 复制 go mod 文件
