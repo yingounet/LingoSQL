@@ -29,7 +29,7 @@ COPY --from=builder /app/migrations ./migrations
 RUN mkdir -p /data
 
 # 暴露端口
-EXPOSE 8080
+EXPOSE 3366
 
 # 运行应用
 CMD ["./server"]

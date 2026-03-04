@@ -3,11 +3,11 @@ version: '3.8'
 services:
   lingosql:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: lingosql
     ports:
-      - "8080:8080"
+      - "3366:3366"
     environment:
       - CONFIG_PATH=/app/config.yaml
       - DB_PATH=/data/lingosql.db

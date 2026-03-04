@@ -50,7 +50,7 @@ export DB_PATH=./data/lingosql.db
 go run cmd/server/main.go
 ```
 
-服务器将在 `http://localhost:8080` 启动。
+服务器将在 `http://localhost:3366` 启动。
 
 #### 前端
 
@@ -80,7 +80,7 @@ docker build -t lingosql:latest -f backend/Dockerfile .
 ```bash
 docker run -d \
   --name lingosql \
-  -p 8080:8080 \
+  -p 3366:3366 \
   -v $(pwd)/data:/data \
   -e DB_PATH=/data/lingosql.db \
   -e JWT_SECRET=your-secret-key \
@@ -99,7 +99,7 @@ docker-compose up -d
 
 ```yaml
 server:
-  port: 8080
+  port: 3366
   mode: debug # debug, release
 
 database:
