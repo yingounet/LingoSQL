@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 //go:embed *.sql
@@ -14,7 +14,7 @@ var migrationFS embed.FS
 
 // Migrate 执行数据库迁移
 func Migrate(dbPath string) error {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", "file:"+dbPath)
 	if err != nil {
 		return fmt.Errorf("打开数据库失败: %w", err)
 	}
@@ -86,7 +86,7 @@ func splitSQLStatements(s string) []string {
 
 // InitDB 初始化数据库连接
 func InitDB(dbPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", "file:"+dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("打开数据库失败: %w", err)
 	}

@@ -1,8 +1,5 @@
-# 构建阶段
+# 构建阶段（modernc.org/sqlite 纯 Go 实现，无需 CGO）
 FROM golang:1.21-alpine AS builder
-
-# go-sqlite3 需要 CGO，安装 gcc 和 sqlite-dev
-RUN apk add --no-cache gcc musl-dev sqlite-dev
 
 WORKDIR /app
 
@@ -13,13 +10,13 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
-# 构建应用
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server
+# 构建应用（CGO_ENABLED=0 纯静态二进制）
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o server ./cmd/server
 
-# 运行阶段
+# 运行阶段（最小化镜像，无需 sqlite 运行时）
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates sqlite
+RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
