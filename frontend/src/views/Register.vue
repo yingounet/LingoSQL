@@ -17,6 +17,8 @@
         :model="form"
         :rules="rules"
         ref="formRef"
+        label-position="top"
+        class="register-form"
         @submit.prevent="handleRegister"
       >
         <el-form-item label="用户名" prop="username">
@@ -39,14 +41,16 @@
             placeholder="请再次输入密码"
           />
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleRegister" :loading="loading" style="width: 100%">
-            注册
-          </el-button>
-        </el-form-item>
-        <el-form-item>
-          <el-link type="primary" @click="$router.push('/login')">已有账号？立即登录</el-link>
-        </el-form-item>
+        <div class="form-actions">
+          <el-form-item>
+            <el-button type="primary" @click="handleRegister" :loading="loading" style="width: 100%">
+              注册
+            </el-button>
+          </el-form-item>
+          <el-form-item class="form-link-item">
+            <el-link type="primary" @click="$router.push('/login')">已有账号？立即登录</el-link>
+          </el-form-item>
+        </div>
       </el-form>
       <div v-if="allowRegistration === false" class="register-back">
         <el-link type="primary" @click="$router.push('/login')">返回登录</el-link>
@@ -180,41 +184,60 @@ const handleRegister = async () => {
   padding: var(--spacing-xl);
 }
 
-.register-card :deep(.el-form-item) {
+.register-form :deep(.el-form-item) {
   margin-bottom: var(--spacing-lg);
 }
 
-.register-card :deep(.el-input__wrapper) {
+.register-form :deep(.el-form-item__label) {
+  padding-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.form-actions {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-md);
+}
+
+.form-actions .form-link-item {
+  margin-bottom: 0;
+}
+
+.form-actions .form-link-item :deep(.el-form-item__content) {
+  justify-content: center;
+}
+
+.register-form :deep(.el-input__wrapper) {
   border-radius: var(--border-radius-small);
   box-shadow: 0 0 0 1px var(--color-border) inset;
   background-color: var(--color-background);
 }
 
-.register-card :deep(.el-input__wrapper:hover) {
+.register-form :deep(.el-input__wrapper:hover) {
   box-shadow: 0 0 0 1px var(--color-primary) inset;
 }
 
-.register-card :deep(.el-input__wrapper.is-focus) {
+.register-form :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px var(--color-primary) inset;
 }
 
-.register-card :deep(.el-button) {
+.register-form :deep(.el-button) {
   height: 36px;
   border-radius: var(--border-radius-small);
   font-weight: 500;
 }
 
-.register-card :deep(.el-button--primary) {
+.register-form :deep(.el-button--primary) {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.register-card :deep(.el-button--primary:hover) {
+.register-form :deep(.el-button--primary:hover) {
   background-color: #0969d9;
   border-color: #0969d9;
 }
 
-.register-card :deep(.el-link) {
+.register-form :deep(.el-link) {
   font-size: var(--font-size-small);
 }
 

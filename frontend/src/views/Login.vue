@@ -4,7 +4,14 @@
       <template #header>
         <h2>登录 LingoSQL</h2>
       </template>
-      <el-form :model="form" :rules="rules" ref="formRef" @submit.prevent="handleLogin">
+      <el-form
+        :model="form"
+        :rules="rules"
+        ref="formRef"
+        label-position="top"
+        class="login-form"
+        @submit.prevent="handleLogin"
+      >
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" placeholder="请输入用户名" />
         </el-form-item>
@@ -16,14 +23,16 @@
             @keyup.enter="handleLogin"
           />
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%">
-            登录
-          </el-button>
-        </el-form-item>
-        <el-form-item v-if="allowRegistration !== false">
-          <el-link type="primary" @click="$router.push('/register')">还没有账号？立即注册</el-link>
-        </el-form-item>
+        <div class="form-actions">
+          <el-form-item>
+            <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%">
+              登录
+            </el-button>
+          </el-form-item>
+          <el-form-item v-if="allowRegistration !== false" class="form-link-item">
+            <el-link type="primary" @click="$router.push('/register')">还没有账号？立即注册</el-link>
+          </el-form-item>
+        </div>
       </el-form>
     </el-card>
   </div>
@@ -121,41 +130,60 @@ const handleLogin = async () => {
   padding: var(--spacing-xl);
 }
 
-.login-card :deep(.el-form-item) {
+.login-form :deep(.el-form-item) {
   margin-bottom: var(--spacing-lg);
 }
 
-.login-card :deep(.el-input__wrapper) {
+.login-form :deep(.el-form-item__label) {
+  padding-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.form-actions {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-md);
+}
+
+.form-actions .form-link-item {
+  margin-bottom: 0;
+}
+
+.form-actions .form-link-item :deep(.el-form-item__content) {
+  justify-content: center;
+}
+
+.login-form :deep(.el-input__wrapper) {
   border-radius: var(--border-radius-small);
   box-shadow: 0 0 0 1px var(--color-border) inset;
   background-color: var(--color-background);
 }
 
-.login-card :deep(.el-input__wrapper:hover) {
+.login-form :deep(.el-input__wrapper:hover) {
   box-shadow: 0 0 0 1px var(--color-primary) inset;
 }
 
-.login-card :deep(.el-input__wrapper.is-focus) {
+.login-form :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px var(--color-primary) inset;
 }
 
-.login-card :deep(.el-button) {
+.login-form :deep(.el-button) {
   height: 36px;
   border-radius: var(--border-radius-small);
   font-weight: 500;
 }
 
-.login-card :deep(.el-button--primary) {
+.login-form :deep(.el-button--primary) {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.login-card :deep(.el-button--primary:hover) {
+.login-form :deep(.el-button--primary:hover) {
   background-color: #0969d9;
   border-color: #0969d9;
 }
 
-.login-card :deep(.el-link) {
+.login-form :deep(.el-link) {
   font-size: var(--font-size-small);
 }
 </style>
