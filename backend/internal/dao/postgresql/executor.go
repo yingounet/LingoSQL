@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -17,9 +18,24 @@ type PostgreSQLExecutor struct {
 }
 
 // NewPostgreSQLExecutor 创建 PostgreSQL 执行器
-func NewPostgreSQLExecutor(host string, port int, database, username, password string) (*PostgreSQLExecutor, error) {
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		username, password, host, port, database)
+// sslMode: 可选，如 "disable", "require", "verify-ca", "verify-full"，空时默认 "disable"
+func NewPostgreSQLExecutor(host string, port int, database, username, password string, sslMode string) (*PostgreSQLExecutor, error) {
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+	// PostgreSQL 必须连接到一个数据库，空时使用 postgres（系统默认库）
+	if database == "" {
+		database = "postgres"
+	}
+	// 使用 url.URL 构建 DSN，自动处理密码中的特殊字符
+	u := &url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(username, password),
+		Host:     fmt.Sprintf("%s:%d", host, port),
+		Path:     "/" + database,
+		RawQuery: "sslmode=" + url.QueryEscape(sslMode),
+	}
+	dsn := u.String()
 
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {

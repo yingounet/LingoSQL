@@ -43,7 +43,7 @@ func (s *MaintenanceService) getExecutor(connectionID, userID int, database stri
 	}
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -57,12 +57,15 @@ func (s *MaintenanceService) OptimizeTable(connectionID, userID int, database, t
 	if err != nil {
 		return err
 	}
-	if conn.DBType == "postgresql" {
-		return errors.New("PostgreSQL不支持OPTIMIZE TABLE，请使用VACUUM")
-	}
 	startTime := time.Now()
 
-	sql := fmt.Sprintf("OPTIMIZE TABLE `%s`.`%s`", database, table)
+	var sql string
+	if conn.DBType == "postgresql" {
+		// PostgreSQL: 使用 VACUUM ANALYZE 等效于 MySQL 的 OPTIMIZE TABLE
+		sql = fmt.Sprintf("VACUUM ANALYZE \"public\".\"%s\"", table)
+	} else {
+		sql = fmt.Sprintf("OPTIMIZE TABLE `%s`.`%s`", database, table)
+	}
 	_, execTime, err := executor.ExecuteUpdate(sql)
 	executionTime := int(time.Since(startTime).Milliseconds())
 	if execTime > 0 {
@@ -91,7 +94,7 @@ func (s *MaintenanceService) RepairTable(connectionID, userID int, database, tab
 		return err
 	}
 	if conn.DBType == "postgresql" {
-		return errors.New("PostgreSQL不支持REPAIR TABLE")
+		return errors.New("PostgreSQL 不支持 REPAIR TABLE，可使用 VACUUM FULL 回收空间")
 	}
 	startTime := time.Now()
 
@@ -127,7 +130,8 @@ func (s *MaintenanceService) AnalyzeTable(connectionID, userID int, database, ta
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("ANALYZE \"%s\".\"%s\"", database, table)
+		// PostgreSQL: 使用 public schema，连接已绑定到目标 database
+		sql = fmt.Sprintf("ANALYZE \"public\".\"%s\"", table)
 	} else {
 		sql = fmt.Sprintf("ANALYZE TABLE `%s`.`%s`", database, table)
 	}

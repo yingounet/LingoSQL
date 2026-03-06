@@ -43,7 +43,7 @@ func (s *DbObjectsService) getExecutor(connectionID, userID int, database string
 	}
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -60,7 +60,8 @@ func (s *DbObjectsService) GetViews(connectionID, userID int, database string) (
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("SELECT table_name, view_definition FROM information_schema.views WHERE table_schema = '%s'", database)
+		// PostgreSQL: table_schema 为 schema 名（默认 public），非 database 名
+		sql = "SELECT table_name, view_definition FROM information_schema.views WHERE table_schema = 'public'"
 	} else {
 		sql = fmt.Sprintf("SELECT TABLE_NAME, VIEW_DEFINITION FROM information_schema.VIEWS WHERE TABLE_SCHEMA = '%s'", database)
 	}
@@ -95,7 +96,8 @@ func (s *DbObjectsService) CreateView(connectionID, userID int, req *models.Crea
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("CREATE VIEW \"%s\".\"%s\" AS %s", req.Database, req.Name, req.Definition)
+		// PostgreSQL: 使用 public schema，连接已绑定到目标 database
+		sql = fmt.Sprintf("CREATE VIEW \"public\".\"%s\" AS %s", req.Name, req.Definition)
 	} else {
 		sql = fmt.Sprintf("CREATE VIEW `%s`.`%s` AS %s", req.Database, req.Name, req.Definition)
 	}
@@ -131,7 +133,8 @@ func (s *DbObjectsService) DropView(connectionID, userID int, database, name str
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("DROP VIEW \"%s\".\"%s\"", database, name)
+		// PostgreSQL: 使用 public schema
+		sql = fmt.Sprintf("DROP VIEW \"public\".\"%s\"", name)
 	} else {
 		sql = fmt.Sprintf("DROP VIEW `%s`.`%s`", database, name)
 	}
@@ -166,7 +169,8 @@ func (s *DbObjectsService) GetProcedures(connectionID, userID int, database stri
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("SELECT routine_name, routine_definition FROM information_schema.routines WHERE routine_schema = '%s' AND routine_type = 'PROCEDURE'", database)
+		// PostgreSQL: routine_schema 为 schema 名（默认 public）
+		sql = "SELECT routine_name, routine_definition FROM information_schema.routines WHERE routine_schema = 'public' AND routine_type = 'PROCEDURE'"
 	} else {
 		sql = fmt.Sprintf("SELECT ROUTINE_NAME, ROUTINE_DEFINITION FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = '%s' AND ROUTINE_TYPE = 'PROCEDURE'", database)
 	}
@@ -232,7 +236,8 @@ func (s *DbObjectsService) DropProcedure(connectionID, userID int, database, nam
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("DROP PROCEDURE \"%s\".\"%s\"", database, name)
+		// PostgreSQL: 使用 public schema，存储过程需加参数签名或使用 IF EXISTS
+		sql = fmt.Sprintf("DROP PROCEDURE IF EXISTS \"public\".\"%s\" CASCADE", name)
 	} else {
 		sql = fmt.Sprintf("DROP PROCEDURE `%s`.`%s`", database, name)
 	}
@@ -278,7 +283,8 @@ func (s *DbObjectsService) ExecuteProcedure(connectionID, userID int, database, 
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("CALL \"%s\".\"%s\"(%s)", database, name, paramStr)
+		// PostgreSQL: 使用 public schema
+		sql = fmt.Sprintf("CALL \"public\".\"%s\"(%s)", name, paramStr)
 	} else {
 		sql = fmt.Sprintf("CALL `%s`.`%s`(%s)", database, name, paramStr)
 	}
@@ -325,7 +331,8 @@ func (s *DbObjectsService) GetFunctions(connectionID, userID int, database strin
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("SELECT routine_name, routine_definition, data_type FROM information_schema.routines WHERE routine_schema = '%s' AND routine_type = 'FUNCTION'", database)
+		// PostgreSQL: routine_schema 为 schema 名（默认 public）
+		sql = "SELECT routine_name, routine_definition, data_type FROM information_schema.routines WHERE routine_schema = 'public' AND routine_type = 'FUNCTION'"
 	} else {
 		sql = fmt.Sprintf("SELECT ROUTINE_NAME, ROUTINE_DEFINITION, DATA_TYPE FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = '%s' AND ROUTINE_TYPE = 'FUNCTION'", database)
 	}
@@ -394,7 +401,8 @@ func (s *DbObjectsService) DropFunction(connectionID, userID int, database, name
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("DROP FUNCTION \"%s\".\"%s\"", database, name)
+		// PostgreSQL: 使用 public schema，CASCADE 处理依赖
+		sql = fmt.Sprintf("DROP FUNCTION IF EXISTS \"public\".\"%s\" CASCADE", name)
 	} else {
 		sql = fmt.Sprintf("DROP FUNCTION `%s`.`%s`", database, name)
 	}
@@ -429,7 +437,8 @@ func (s *DbObjectsService) GetTriggers(connectionID, userID int, database string
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("SELECT trigger_name, event_manipulation, event_object_table, action_timing, action_statement FROM information_schema.triggers WHERE trigger_schema = '%s'", database)
+		// PostgreSQL: trigger_schema 为 schema 名（默认 public）
+		sql = "SELECT trigger_name, event_manipulation, event_object_table, action_timing, action_statement FROM information_schema.triggers WHERE trigger_schema = 'public'"
 	} else {
 		sql = fmt.Sprintf("SELECT TRIGGER_NAME, EVENT_MANIPULATION, EVENT_OBJECT_TABLE, ACTION_TIMING, ACTION_STATEMENT FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '%s'", database)
 	}
@@ -502,7 +511,28 @@ func (s *DbObjectsService) DropTrigger(connectionID, userID int, database, name 
 
 	var sql string
 	if conn.DBType == "postgresql" {
-		sql = fmt.Sprintf("DROP TRIGGER \"%s\".\"%s\"", database, name)
+		// PostgreSQL: DROP TRIGGER 需要 ON table，先查询触发器所属表
+		safeName := strings.ReplaceAll(name, "'", "''")
+		findSQL := fmt.Sprintf("SELECT event_object_table FROM information_schema.triggers WHERE trigger_schema = 'public' AND trigger_name = '%s' LIMIT 1", safeName)
+		cols, rows, _, findErr := executor.Execute(findSQL)
+		if findErr != nil {
+			return fmt.Errorf("查询触发器失败: %w", findErr)
+		}
+		if len(rows) == 0 {
+			return fmt.Errorf("找不到触发器 %s", name)
+		}
+		tableColIdx := -1
+		for i, c := range cols {
+			if strings.EqualFold(c, "event_object_table") {
+				tableColIdx = i
+				break
+			}
+		}
+		if tableColIdx < 0 || len(rows[0]) <= tableColIdx {
+			return fmt.Errorf("无法解析触发器 %s 所属表", name)
+		}
+		tableName := fmt.Sprintf("%v", rows[0][tableColIdx])
+		sql = fmt.Sprintf("DROP TRIGGER IF EXISTS \"%s\" ON \"public\".\"%s\" CASCADE", name, tableName)
 	} else {
 		sql = fmt.Sprintf("DROP TRIGGER `%s`.`%s`", database, name)
 	}

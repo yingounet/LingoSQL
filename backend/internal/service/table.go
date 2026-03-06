@@ -59,7 +59,7 @@ func (s *TableService) GetTables(connectionID, userID int, database string) ([]m
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (s *TableService) GetTableInfo(connectionID, userID int, database, table st
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func (s *TableService) GetTableColumns(connectionID, userID int, database, table
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func (s *TableService) GetTableIndexes(connectionID, userID int, database, table
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -309,7 +309,7 @@ func (s *TableService) GetTableRows(connectionID, userID int, database, table st
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -381,7 +381,7 @@ func (s *TableService) UpdateTableRow(connectionID, userID int, database, table 
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return 0, err

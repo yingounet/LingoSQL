@@ -8,6 +8,7 @@ import (
 
 	"lingosql/internal/dao/mysql"
 	"lingosql/internal/dao/postgresql"
+	"lingosql/internal/models"
 	"lingosql/pkg/types"
 )
 
@@ -93,10 +94,16 @@ func GetPool() *ConnectionPool {
 
 // GetExecutor 获取执行器
 // connectionID=0 表示临时连接，不会被缓存，调用方需要自行关闭
-func (p *ConnectionPool) GetExecutor(connectionID int, dbType, host string, port int, database, username, password string) (Executor, error) {
+// opts 可选，传入 DbOptions 以支持 SSL 等连接选项（PostgreSQL 等）
+func (p *ConnectionPool) GetExecutor(connectionID int, dbType, host string, port int, database, username, password string, opts ...*models.DbOptions) (Executor, error) {
+	var dbOpts *models.DbOptions
+	if len(opts) > 0 && opts[0] != nil {
+		dbOpts = opts[0]
+	}
+
 	// connectionID=0 是临时连接，不缓存
 	if connectionID == 0 {
-		return p.createExecutor(dbType, host, port, database, username, password)
+		return p.createExecutor(dbType, host, port, database, username, password, dbOpts)
 	}
 
 	// 使用 connectionID:database 作为缓存 key
@@ -115,7 +122,7 @@ func (p *ConnectionPool) GetExecutor(connectionID int, dbType, host string, port
 	}
 
 	// 创建新连接
-	newExecutor, err := p.createExecutor(dbType, host, port, database, username, password)
+	newExecutor, err := p.createExecutor(dbType, host, port, database, username, password, dbOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -130,12 +137,16 @@ func (p *ConnectionPool) GetExecutor(connectionID int, dbType, host string, port
 }
 
 // createExecutor 创建新的执行器
-func (p *ConnectionPool) createExecutor(dbType, host string, port int, database, username, password string) (Executor, error) {
+func (p *ConnectionPool) createExecutor(dbType, host string, port int, database, username, password string, opts *models.DbOptions) (Executor, error) {
 	switch dbType {
 	case "mysql", "mariadb":
 		return mysql.NewMySQLExecutor(host, port, database, username, password)
 	case "postgresql":
-		return postgresql.NewPostgreSQLExecutor(host, port, database, username, password)
+		sslMode := "disable"
+		if opts != nil && opts.SslMode != "" {
+			sslMode = opts.SslMode
+		}
+		return postgresql.NewPostgreSQLExecutor(host, port, database, username, password, sslMode)
 	default:
 		return nil, fmt.Errorf("不支持的数据库类型: %s", dbType)
 	}

@@ -49,7 +49,7 @@ func (s *UserAdminService) GetUsers(connectionID, userID int) ([]map[string]inte
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (s *UserAdminService) CreateUser(connectionID, userID int, req *models.Crea
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func (s *UserAdminService) DeleteUser(connectionID, userID int, req *models.Dele
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return err
@@ -213,7 +213,7 @@ func (s *UserAdminService) ChangeUserPassword(connectionID, userID int, req *mod
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return err
@@ -248,7 +248,7 @@ func (s *UserAdminService) GetUserGrants(connectionID, userID int, username, hos
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err

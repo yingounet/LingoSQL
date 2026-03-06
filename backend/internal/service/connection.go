@@ -430,24 +430,32 @@ func (s *ConnectionService) Test(id, userID int) (*models.TestConnectionResponse
 	}
 
 	// 测试连接
-	return s.testConnection(conn.DBType, dbConfig.Host, dbConfig.Port, dbConfig.Database, dbConfig.Username, password)
+	return s.testConnection(conn.DBType, dbConfig.Host, dbConfig.Port, dbConfig.Database, dbConfig.Username, password, dbConfig.Options)
 }
 
 // TestConfig 测试未保存的连接配置
 func (s *ConnectionService) TestConfig(req *models.ConnectionTestRequest) (*models.TestConnectionResponse, error) {
 	// 直接使用请求中的密码测试
+	var opts *models.DbOptions
+	if req.DbConfig.Options != nil {
+		opts = &models.DbOptions{
+			SslMode: req.DbConfig.Options.SslMode,
+			Charset: req.DbConfig.Options.Charset,
+			Timeout: req.DbConfig.Options.Timeout,
+		}
+	}
 	return s.testConnection(req.DBType, req.DbConfig.Host, req.DbConfig.Port,
-		req.DbConfig.Database, req.DbConfig.Username, req.DbConfig.Password)
+		req.DbConfig.Database, req.DbConfig.Username, req.DbConfig.Password, opts)
 }
 
 // testConnection 测试数据库连接
-func (s *ConnectionService) testConnection(dbType, host string, port int, database, username, password string) (*models.TestConnectionResponse, error) {
+func (s *ConnectionService) testConnection(dbType, host string, port int, database, username, password string, opts *models.DbOptions) (*models.TestConnectionResponse, error) {
 	startTime := time.Now()
 
 	// 创建执行器测试连接
 	// connectionID=0 表示临时连接，不会被连接池缓存，需要手动关闭
 	executor, err := db.GetPool().GetExecutor(
-		0, dbType, host, port, database, username, password,
+		0, dbType, host, port, database, username, password, opts,
 	)
 	if err != nil {
 		return &models.TestConnectionResponse{

@@ -49,7 +49,7 @@ func (s *PermissionAdminService) GetPermissionTree(connectionID, userID int, use
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (s *PermissionAdminService) GrantPermission(connectionID, userID int, req *
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ func (s *PermissionAdminService) RevokePermission(connectionID, userID int, req 
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return err

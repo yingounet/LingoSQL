@@ -43,7 +43,7 @@ func (s *ImportService) getExecutor(connectionID, userID int, database string) (
 	}
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		database, dbConfig.Username, password,
+		database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, nil, err

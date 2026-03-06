@@ -49,7 +49,7 @@ func (s *DatabaseAdminService) CheckAdminPermissions(connectionID, userID int) (
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (s *DatabaseAdminService) GetDatabaseList(connectionID, userID int) ([]map[
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func (s *DatabaseAdminService) GetDatabaseInfo(connectionID, userID int, databas
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, err
@@ -184,7 +184,7 @@ func (s *DatabaseAdminService) CreateDatabase(connectionID, userID int, req *mod
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return err
@@ -266,7 +266,7 @@ func (s *DatabaseAdminService) DropDatabase(connectionID, userID int, databaseNa
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return err
@@ -329,7 +329,7 @@ func (s *DatabaseAdminService) RenameDatabase(connectionID, userID int, database
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return err

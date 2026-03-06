@@ -53,7 +53,7 @@ func (s *QueryService) Execute(userID int, req *models.QueryExecuteRequest) (*mo
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		req.ConnectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		req.Database, dbConfig.Username, password,
+		req.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, 0, fmt.Errorf("获取执行器: %w", err)
@@ -201,7 +201,7 @@ func (s *QueryService) Explain(userID int, req *models.ExplainRequest) (*models.
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		req.ConnectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		req.Database, dbConfig.Username, password,
+		req.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("获取执行器: %w", err)
@@ -254,7 +254,7 @@ func (s *QueryService) BeginTransaction(userID int, req *models.TransactionReque
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		req.ConnectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		req.Database, dbConfig.Username, password,
+		req.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return fmt.Errorf("获取执行器: %w", err)
@@ -290,7 +290,7 @@ func (s *QueryService) CommitTransaction(userID int, req *models.TransactionRequ
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		req.ConnectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		req.Database, dbConfig.Username, password,
+		req.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return fmt.Errorf("获取执行器: %w", err)
@@ -326,7 +326,7 @@ func (s *QueryService) RollbackTransaction(userID int, req *models.TransactionRe
 	// 获取执行器
 	executor, err := db.GetPool().GetExecutor(
 		req.ConnectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		req.Database, dbConfig.Username, password,
+		req.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return fmt.Errorf("获取执行器: %w", err)

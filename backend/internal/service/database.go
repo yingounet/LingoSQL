@@ -47,10 +47,10 @@ func (s *DatabaseService) GetDatabases(connectionID, userID int) ([]string, erro
 		return nil, err
 	}
 
-	// 获取执行器
+	// 获取执行器（PostgreSQL 需连接到一个库，用连接配置的默认库）
 	executor, err := db.GetPool().GetExecutor(
 		connectionID, conn.DBType, dbConfig.Host, dbConfig.Port,
-		"", dbConfig.Username, password,
+		dbConfig.Database, dbConfig.Username, password, dbConfig.Options,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("获取执行器: %w", err)
