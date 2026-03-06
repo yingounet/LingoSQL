@@ -54,19 +54,15 @@
     
     <!-- Tab切换器 -->
     <div class="database-content" v-else>
-      <el-tabs v-model="activeTab" @tab-change="handleTabChange" :key="`tabs-${hasAdminPermission}`">
+      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
         <!-- 数据库列表Tab -->
         <el-tab-pane label="数据库列表" name="list">
           <DatabaseListTab />
         </el-tab-pane>
         
-        <!-- 管理Tab（仅在有权限时显示） -->
-        <el-tab-pane 
-          v-if="hasAdminPermission" 
-          label="管理" 
-          name="admin"
-        >
-          <DatabaseAdminTabs />
+        <!-- 管理Tab（有连接即显示，表管理对普通用户可用；库/用户/权限根据权限显示） -->
+        <el-tab-pane label="管理" name="admin">
+          <DatabaseAdminTabs :admin-permissions="adminPermissions" />
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -80,6 +76,7 @@ import { ElMessage } from 'element-plus'
 import { useConnectionStore } from '@/store/connection'
 import { useUrlState } from '@/composables/useUrlState'
 import { checkAdminPermissions } from '@/api/databaseAdmin'
+import type { AdminPermission } from '@/types/databaseAdmin'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import DatabaseListTab from '@/components/database-admin/DatabaseListTab.vue'
 import DatabaseAdminTabs from '@/components/database-admin/DatabaseAdminTabs.vue'
@@ -98,8 +95,8 @@ const { updateUrlParams } = useUrlState()
 // Tab状态
 const activeTab = ref('list')
 
-// 权限状态
-const hasAdminPermission = ref(false)
+// 权限状态（用于管理 Tab 内菜单显隐；表管理始终可用）
+const adminPermissions = ref<AdminPermission | null>(null)
 const checkingPermission = ref(false)
 
 // 计算属性
@@ -118,35 +115,19 @@ const pageDescription = computed(() => {
   return `展示 ${currentConnection.value.name} 服务器上的所有数据库`
 })
 
-// 检查管理权限
+// 检查管理权限（表管理不依赖此权限，普通用户也可建表）
 async function checkAdminPermission() {
   if (!currentConnection.value) {
-    hasAdminPermission.value = false
+    adminPermissions.value = null
     return
   }
-  
+
   checkingPermission.value = true
   try {
     const permissions = await checkAdminPermissions(currentConnection.value.id)
-    console.log('权限检查结果:', permissions)
-    console.log('权限详情:', {
-      has_database_admin: permissions.has_database_admin,
-      has_user_admin: permissions.has_user_admin,
-      has_permission_admin: permissions.has_permission_admin
-    })
-    
-    const hasAnyPermission = 
-      permissions.has_database_admin || 
-      permissions.has_user_admin || 
-      permissions.has_permission_admin
-    
-    hasAdminPermission.value = hasAnyPermission
-    console.log('hasAdminPermission设置为:', hasAdminPermission.value)
+    adminPermissions.value = permissions
   } catch (error: any) {
-    // 权限检查失败，默认不显示管理Tab
-    hasAdminPermission.value = false
-    console.error('权限检查失败:', error)
-    console.error('错误详情:', error.response?.data || error.message)
+    adminPermissions.value = null
     const requestId = error?.requestId ? `，请求ID: ${error.requestId}` : ''
     ElMessage.error((error?.message || '权限检查失败') + requestId)
   } finally {
@@ -154,10 +135,9 @@ async function checkAdminPermission() {
   }
 }
 
-// Tab切换
+// Tab 切换
 function handleTabChange(tabName: string) {
   if (tabName === 'admin') {
-    // 切换到管理Tab时重新检查权限
     checkAdminPermission()
   }
 }
@@ -228,11 +208,10 @@ async function restoreFromUrl() {
 // 监听连接变化
 watch(() => currentConnection.value, async (newConn) => {
   if (newConn) {
-    // 等待一下确保连接完全加载
     await new Promise(resolve => setTimeout(resolve, 100))
     await checkAdminPermission()
   } else {
-    hasAdminPermission.value = false
+    adminPermissions.value = null
   }
 })
 
@@ -249,7 +228,7 @@ watch(() => route.query.connection_id, async (newId) => {
 
 // 从列表 Tab「去建表」跳转时自动切换到管理 Tab
 watch(() => route.query.admin_tab, (tab) => {
-  if ((tab === 'table' || tab === 'database') && hasAdminPermission.value) {
+  if (tab === 'table' || tab === 'database' || tab === 'user' || tab === 'permission') {
     activeTab.value = 'admin'
   }
 }, { immediate: true })

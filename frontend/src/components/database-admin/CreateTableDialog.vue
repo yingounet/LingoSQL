@@ -15,7 +15,7 @@
           v-model="form.create_ddl"
           type="textarea"
           :rows="6"
-          placeholder="可选。留空将创建仅含 id 主键的默认表；也可填写完整 CREATE TABLE 语句"
+          :placeholder="dbType === 'postgresql' ? '可选。留空将创建仅含 id SERIAL PRIMARY KEY 的默认表；填写时请用 PostgreSQL 语法（双引号标识符、SERIAL 等）' : '可选。留空将创建仅含 id 主键的默认表；也可填写完整 CREATE TABLE 语句'"
         />
       </el-form-item>
     </el-form>
@@ -34,6 +34,9 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { createTable } from '@/api/tableAdmin'
 import { useConnectionStore } from '@/store/connection'
+
+const connectionStore = useConnectionStore()
+const dbType = computed(() => connectionStore.currentConnection?.db_type ?? 'mysql')
 
 const props = defineProps<{
   modelValue: boolean
@@ -79,8 +82,7 @@ async function handleSubmit() {
   if (!formRef.value || !props.database) return
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    const connStore = useConnectionStore()
-    const connectionId = connStore.currentConnection?.id
+    const connectionId = connectionStore.currentConnection?.id
     if (!connectionId) {
       ElMessage.error('请先选择连接')
       return

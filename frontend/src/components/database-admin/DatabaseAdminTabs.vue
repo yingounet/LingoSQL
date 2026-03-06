@@ -1,6 +1,6 @@
 <template>
   <div class="database-admin-tabs">
-    <!-- 左侧竖栏导航 -->
+    <!-- 左侧竖栏导航（表管理始终显示；库/用户/权限根据权限显示） -->
     <aside class="admin-sidebar">
       <el-menu
         :default-active="activeAdminTab"
@@ -8,7 +8,7 @@
         @select="handleMenuSelect"
       >
         <div class="menu-group-label">库与表</div>
-        <el-menu-item index="database">
+        <el-menu-item v-if="adminPermissions?.has_database_admin" index="database">
           <el-icon><Folder /></el-icon>
           <span>数据库管理</span>
           <span class="menu-desc">创建、删除数据库</span>
@@ -18,13 +18,13 @@
           <span>表管理</span>
           <span class="menu-desc">建表、删表</span>
         </el-menu-item>
-        <div class="menu-group-label">用户与权限</div>
-        <el-menu-item index="user">
+        <div v-if="adminPermissions?.has_user_admin || adminPermissions?.has_permission_admin" class="menu-group-label">用户与权限</div>
+        <el-menu-item v-if="adminPermissions?.has_user_admin" index="user">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
           <span class="menu-desc">创建用户、改密、删用户</span>
         </el-menu-item>
-        <el-menu-item index="permission">
+        <el-menu-item v-if="adminPermissions?.has_permission_admin" index="permission">
           <el-icon><Key /></el-icon>
           <span>权限管理</span>
           <span class="menu-desc">授予、回收权限</span>
@@ -45,25 +45,37 @@
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Folder, Grid, User, Key } from '@element-plus/icons-vue'
+import type { AdminPermission } from '@/types/databaseAdmin'
 import DatabaseManagement from './DatabaseManagement.vue'
 import TableManagement from './TableManagement.vue'
 import UserManagement from './UserManagement.vue'
 import PermissionManagement from './PermissionManagement.vue'
 
-const route = useRoute()
-const activeAdminTab = ref<'database' | 'table' | 'user' | 'permission'>('database')
+const props = defineProps<{
+  adminPermissions?: AdminPermission | null
+}>()
 
-function handleMenuSelect(index: string) {
-  activeAdminTab.value = index as typeof activeAdminTab.value
+const route = useRoute()
+type TabType = 'database' | 'table' | 'user' | 'permission'
+const activeAdminTab = ref<TabType>('table')
+
+function resolveTab(): TabType {
+  const tab = route.query.admin_tab as string
+  if (tab === 'table') return 'table'
+  if (tab === 'database' && props.adminPermissions?.has_database_admin) return 'database'
+  if (tab === 'user' && props.adminPermissions?.has_user_admin) return 'user'
+  if (tab === 'permission' && props.adminPermissions?.has_permission_admin) return 'permission'
+  return 'table'
 }
 
-// 从 URL admin_tab 恢复（如「去建表」跳转）
+function handleMenuSelect(index: string) {
+  activeAdminTab.value = index as TabType
+}
+
 watch(
-  () => route.query.admin_tab,
-  (tab) => {
-    if (tab === 'table' || tab === 'database' || tab === 'user' || tab === 'permission') {
-      activeAdminTab.value = tab
-    }
+  () => [route.query.admin_tab, props.adminPermissions] as const,
+  () => {
+    activeAdminTab.value = resolveTab()
   },
   { immediate: true }
 )
