@@ -253,6 +253,7 @@ const selectedTable = ref<string | null>(null)
 // 表详情信息
 const tableDetailInfo = ref<TableDetailInfo | null>(null)
 const loadingTableInfo = ref(false)
+let tableInfoDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // 过滤后的表列表
 const filteredTables = computed(() => {
@@ -290,7 +291,10 @@ async function handleTableClick(tableName: string) {
   if (selectedTable.value === tableName) {
     selectedTable.value = null
     tableDetailInfo.value = null
-    // 更新 URL，清除表参数
+    if (tableInfoDebounceTimer) {
+      clearTimeout(tableInfoDebounceTimer)
+      tableInfoDebounceTimer = null
+    }
     updateUrlParams({ table: null })
     return
   }
@@ -321,22 +325,26 @@ async function handleTableClick(tableName: string) {
     })
   }
 
-  // 获取表详情（用于侧边栏展示）
+  // 获取表详情（400ms 防抖，晚于 RowData 的 150ms，错峰减少并发）
   if (!currentConnection.value || !selectedDatabase.value) return
-
-  loadingTableInfo.value = true
-  try {
-    tableDetailInfo.value = await getTableInfo(
-      currentConnection.value.id,
-      selectedDatabase.value,
-      tableName
-    )
-  } catch (error) {
-    console.error('获取表详情失败:', error)
-    tableDetailInfo.value = null
-  } finally {
-    loadingTableInfo.value = false
-  }
+  if (tableInfoDebounceTimer) clearTimeout(tableInfoDebounceTimer)
+  tableInfoDebounceTimer = setTimeout(async () => {
+    tableInfoDebounceTimer = null
+    if (selectedTable.value !== tableName) return
+    loadingTableInfo.value = true
+    try {
+      tableDetailInfo.value = await getTableInfo(
+        currentConnection.value!.id,
+        selectedDatabase.value!,
+        tableName
+      )
+    } catch (error) {
+      console.error('获取表详情失败:', error)
+      tableDetailInfo.value = null
+    } finally {
+      loadingTableInfo.value = false
+    }
+  }, 400)
 }
 
 // 监听数据库变化，清空选中的表

@@ -22,13 +22,13 @@
             <component 
               v-if="route.meta.keepAlive" 
               :is="Component" 
-              :key="route.fullPath" 
+              :key="route.path" 
             />
           </keep-alive>
           <component 
             v-if="!route.meta.keepAlive" 
             :is="Component" 
-            :key="route.fullPath" 
+            :key="route.path" 
           />
         </router-view>
       </main>

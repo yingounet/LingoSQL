@@ -512,7 +512,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onActivated, reactive, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onActivated, onDeactivated, reactive, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
@@ -540,7 +540,6 @@ import PageHeader from '@/components/layout/PageHeader.vue'
 import DataImportDialog from '@/components/import/DataImportDialog.vue'
 import { useConnectionStore } from '@/store/connection'
 import { useUrlState } from '@/composables/useUrlState'
-import { getTableIndexes, getTableColumns, type ColumnInfo } from '@/api/schema'
 import { 
   getTableData, 
   updateTableRow,
@@ -548,7 +547,6 @@ import {
   batchDeleteData,
   compareData,
   findReplaceData,
-  extractIndexFields,
   type ColumnDefFrontend as ColumnDef,
   type FilterCondition as ApiFilterCondition,
   type RowDataResult,
@@ -628,14 +626,12 @@ const pageDescription = computed(() => {
 
 // 数据加载状态
 const loadingData = ref(false)
-const loadingIndexes = ref(false)
 
-// 索引字段
+// 索引字段（从 getTableData 的 columns 派生，无需单独请求）
 const indexFields = ref<string[]>([])
 
-// 列信息
+// 列信息（来自 getTableData）
 const columns = ref<ColumnDef[]>([])
-const tableColumns = ref<ColumnInfo[]>([])
 
 // 非索引列（用于字段选择器）
 const nonIndexColumns = computed(() => {
@@ -1028,46 +1024,19 @@ function shouldReload(): boolean {
   return changed
 }
 
-// 加载索引字段
-async function loadIndexFields() {
-  if (!currentTableName.value || !connectionStore.currentConnection || !connectionStore.currentDatabase) {
-    indexFields.value = []
-    return
-  }
-
-  loadingIndexes.value = true
-  try {
-    const indexes = await getTableIndexes(
-      connectionStore.currentConnection.id,
-      connectionStore.currentDatabase,
-      currentTableName.value
-    )
-    indexFields.value = extractIndexFields(indexes)
-  } catch (error) {
-    console.error('加载索引字段失败:', error)
-    indexFields.value = []
-  } finally {
-    loadingIndexes.value = false
-  }
+// 归一化列定义（API 返回 is_primary/is_index，转为 isPrimary/isIndex 供模板使用）
+function normalizeColumns(cols: Array<Record<string, unknown>>): ColumnDef[] {
+  return cols.map(c => ({
+    name: String(c.name ?? ''),
+    type: String(c.type ?? ''),
+    isPrimary: !!(c.is_primary ?? c.isPrimary),
+    isIndex: !!(c.is_index ?? c.isIndex)
+  }))
 }
 
-// 加载列信息
-async function loadColumnInfo() {
-  if (!currentTableName.value || !connectionStore.currentConnection || !connectionStore.currentDatabase) {
-    tableColumns.value = []
-    return
-  }
-
-  try {
-    tableColumns.value = await getTableColumns(
-      connectionStore.currentConnection.id,
-      connectionStore.currentDatabase,
-      currentTableName.value
-    )
-  } catch (error) {
-    console.error('加载列信息失败:', error)
-    tableColumns.value = []
-  }
+// 从列定义派生索引字段
+function deriveIndexFields(cols: ColumnDef[]): string[] {
+  return cols.filter(c => c.isPrimary || c.isIndex).map(c => c.name)
 }
 
 // 构建筛选条件数组（用于后端 API）
@@ -1103,12 +1072,13 @@ function buildFilterArray(): ApiFilterCondition[] {
 }
 
 // 加载表数据
-async function loadTableData() {
+async function loadTableData(abortIfStale?: () => boolean) {
   if (!initialized.value) return
   
   if (!currentTableName.value || !connectionStore.currentConnection || !connectionStore.currentDatabase) {
     rows.value = []
     columns.value = []
+    indexFields.value = []
     pagination.total = 0
     return
   }
@@ -1125,45 +1095,48 @@ async function loadTableData() {
       { page: pagination.page, pageSize: pagination.pageSize }
     )
 
-    columns.value = result.columns ?? []
+    if (abortIfStale?.()) return
+
+    const rawCols = (result.columns ?? []) as Array<Record<string, unknown>>
+    const cols = normalizeColumns(rawCols)
+    columns.value = cols
     rows.value = result.rows ?? []
     pagination.total = result.total ?? 0
 
-    // 初始化选中的列
+    // 从 columns 派生索引字段，无需单独请求 getTableIndexes
+    indexFields.value = deriveIndexFields(cols)
+
     if (selectedColumns.value.length === 0) {
-      selectedColumns.value = result.columns.map(c => c.name)
+      selectedColumns.value = cols.map(c => c.name)
     }
   } catch (error) {
+    if (abortIfStale?.()) return
     console.error('加载表数据失败:', error)
     ElMessage.error('加载表数据失败')
     rows.value = []
     columns.value = []
+    indexFields.value = []
     pagination.total = 0
   } finally {
-    loadingData.value = false
+    if (!abortIfStale?.()) loadingData.value = false
   }
 }
 
-// 加载所有数据（索引字段、列信息、表数据）
+// 加载表数据（唯一必需请求，columns 已含索引信息可派生 indexFields）
 async function loadAllData(skipCheck = false) {
-  // 保存旧的表名，用于检测表名是否变化
   const oldTable = lastLoadParams.value.table
-  
-  // 检查参数是否变化，如果没变化则不重新加载
-  if (!skipCheck && !shouldReload()) {
-    return
-  }
-  
-  // 如果表名变化，重置筛选和分页
+
+  if (!skipCheck && !shouldReload()) return
+
   if (oldTable !== currentTableName.value) {
     filterConditions.value = []
     pagination.page = 1
     selectedColumns.value = []
   }
-  
-  await loadIndexFields()
-  await loadColumnInfo()
-  await loadTableData()
+
+  const myLoadId = loadRequestId
+  const isStale = () => myLoadId !== loadRequestId
+  await loadTableData(isStale)
 }
 
 // 初始化：从 URL 恢复状态
@@ -1219,8 +1192,6 @@ function handleReset() {
 
 // 刷新
 async function handleRefresh() {
-  await loadIndexFields()
-  await loadColumnInfo()
   await loadTableData()
 }
 
@@ -1489,7 +1460,13 @@ async function doFindReplace() {
 
 // ==================== 监听器 ====================
 
-// 合并多个 watch，只在参数真正变化时才加载数据
+// 加载请求 ID，用于丢弃过期的响应
+let loadRequestId = 0
+
+// 防抖定时器
+let loadDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+// 合并多个 watch，防抖 + 丢弃过期响应，避免切换表时并发请求导致 SQLITE_BUSY
 watch(
   [
     () => connectionStore.currentConnection?.id,
@@ -1497,9 +1474,14 @@ watch(
     currentTableName
   ],
   () => {
-    if (initialized.value) {
+    if (!initialized.value) return
+    // 防抖：快速切换表时只加载最后一次选中的表
+    if (loadDebounceTimer) clearTimeout(loadDebounceTimer)
+    loadDebounceTimer = setTimeout(() => {
+      loadDebounceTimer = null
+      loadRequestId += 1
       loadAllData()
-    }
+    }, 150)
   },
   { deep: false }
 )
@@ -1514,8 +1496,15 @@ onMounted(() => {
 // 组件激活时检查是否需要重新加载（keep-alive 缓存后切换回来时）
 onActivated(() => {
   if (initialized.value) {
-    // 检查参数是否变化，如果变化则重新加载
     initFromUrl(false)
+  }
+})
+
+// 离开页面时清理防抖定时器，避免 deactivated 的组件仍触发请求
+onDeactivated(() => {
+  if (loadDebounceTimer) {
+    clearTimeout(loadDebounceTimer)
+    loadDebounceTimer = null
   }
 })
 </script>

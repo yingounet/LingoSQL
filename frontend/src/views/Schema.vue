@@ -575,7 +575,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onActivated } from 'vue'
+import { ref, computed, watch, onMounted, onActivated, onDeactivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Grid, List, Plus, Key, Check, Connection, Document, CopyDocument, Edit } from '@element-plus/icons-vue'
@@ -1006,7 +1006,10 @@ async function initFromUrl(forceReload = false) {
   await loadSchemaData(true)
 }
 
-// 合并多个 watch，只在参数真正变化时才加载数据
+// 防抖定时器，切换表时减少并发请求
+let schemaLoadDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+// 合并多个 watch，防抖加载，避免切换表时触发大量请求
 watch(
   [
     () => connectionStore.currentConnection?.id,
@@ -1015,9 +1018,12 @@ watch(
     dbType
   ],
   () => {
-    if (initialized.value) {
+    if (!initialized.value) return
+    if (schemaLoadDebounceTimer) clearTimeout(schemaLoadDebounceTimer)
+    schemaLoadDebounceTimer = setTimeout(() => {
+      schemaLoadDebounceTimer = null
       loadSchemaData()
-    }
+    }, 150)
   },
   { deep: false }
 )
@@ -1030,8 +1036,15 @@ onMounted(() => {
 // 组件激活时检查是否需要重新加载（keep-alive 缓存后切换回来时）
 onActivated(() => {
   if (initialized.value) {
-    // 检查参数是否变化，如果变化则重新加载
     initFromUrl(false)
+  }
+})
+
+// 离开页面时清理防抖定时器
+onDeactivated(() => {
+  if (schemaLoadDebounceTimer) {
+    clearTimeout(schemaLoadDebounceTimer)
+    schemaLoadDebounceTimer = null
   }
 })
 

@@ -96,6 +96,19 @@ func InitDB(dbPath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("数据库连接测试失败: %w", err)
 	}
 
+	// 缓解 SQLITE_BUSY：等待锁释放而非立即失败
+	if _, err := db.Exec("PRAGMA busy_timeout=5000"); err != nil {
+		return nil, fmt.Errorf("设置 busy_timeout 失败: %w", err)
+	}
+	// WAL 模式支持并发读写
+	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+		return nil, fmt.Errorf("启用 WAL 模式失败: %w", err)
+	}
+
+	// 限制连接数，降低 SQLITE_BUSY 概率（SQLite 单文件，过高并发易锁）
+	db.SetMaxOpenConns(5)
+	db.SetMaxIdleConns(2)
+
 	// 执行迁移
 	if err := Migrate(dbPath); err != nil {
 		return nil, fmt.Errorf("数据库迁移失败: %w", err)
