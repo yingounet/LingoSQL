@@ -228,7 +228,7 @@ watch(() => route.query.connection_id, async (newId) => {
 
 // 从列表 Tab「去建表」跳转时自动切换到管理 Tab
 watch(() => route.query.admin_tab, (tab) => {
-  if (tab === 'table' || tab === 'database' || tab === 'user' || tab === 'permission') {
+  if (tab === 'table' || tab === 'database' || tab === 'backup' || tab === 'user' || tab === 'permission') {
     activeTab.value = 'admin'
   }
 }, { immediate: true })

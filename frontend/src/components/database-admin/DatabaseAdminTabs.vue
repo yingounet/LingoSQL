@@ -18,6 +18,11 @@
           <span>表管理</span>
           <span class="menu-desc">建表、删表</span>
         </el-menu-item>
+        <el-menu-item index="backup">
+          <el-icon><FolderOpened /></el-icon>
+          <span>备份与恢复</span>
+          <span class="menu-desc">备份、恢复、管理备份文件</span>
+        </el-menu-item>
         <div v-if="adminPermissions?.has_user_admin || adminPermissions?.has_permission_admin" class="menu-group-label">用户与权限</div>
         <el-menu-item v-if="adminPermissions?.has_user_admin" index="user">
           <el-icon><User /></el-icon>
@@ -35,6 +40,7 @@
     <main class="admin-content">
       <DatabaseManagement v-show="activeAdminTab === 'database'" />
       <TableManagement v-show="activeAdminTab === 'table'" />
+      <BackupManagement v-show="activeAdminTab === 'backup'" />
       <UserManagement v-show="activeAdminTab === 'user'" />
       <PermissionManagement v-show="activeAdminTab === 'permission'" />
     </main>
@@ -43,11 +49,12 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { Folder, Grid, User, Key } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Folder, FolderOpened, Grid, User, Key } from '@element-plus/icons-vue'
 import type { AdminPermission } from '@/types/databaseAdmin'
 import DatabaseManagement from './DatabaseManagement.vue'
 import TableManagement from './TableManagement.vue'
+import BackupManagement from './BackupManagement.vue'
 import UserManagement from './UserManagement.vue'
 import PermissionManagement from './PermissionManagement.vue'
 
@@ -56,12 +63,14 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
-type TabType = 'database' | 'table' | 'user' | 'permission'
+const router = useRouter()
+type TabType = 'database' | 'table' | 'backup' | 'user' | 'permission'
 const activeAdminTab = ref<TabType>('table')
 
 function resolveTab(): TabType {
   const tab = route.query.admin_tab as string
   if (tab === 'table') return 'table'
+  if (tab === 'backup') return 'backup'
   if (tab === 'database' && props.adminPermissions?.has_database_admin) return 'database'
   if (tab === 'user' && props.adminPermissions?.has_user_admin) return 'user'
   if (tab === 'permission' && props.adminPermissions?.has_permission_admin) return 'permission'
@@ -70,6 +79,10 @@ function resolveTab(): TabType {
 
 function handleMenuSelect(index: string) {
   activeAdminTab.value = index as TabType
+  router.replace({
+    path: route.path,
+    query: { ...route.query, admin_tab: index }
+  })
 }
 
 watch(
