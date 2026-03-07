@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"lingosql/internal/models"
 	"lingosql/internal/service"
@@ -32,7 +34,7 @@ func (h *RowDataHandler) GetTableData(c *gin.Context) {
 		return
 	}
 
-	// 转换filters格式
+	// 转换filters格式（value 可能是 string 或 number，统一转 string）
 	filters := make([]db.RowFilter, 0, len(req.Filters))
 	for _, f := range req.Filters {
 		filter := db.RowFilter{}
@@ -42,8 +44,22 @@ func (h *RowDataHandler) GetTableData(c *gin.Context) {
 		if operator, ok := f["operator"].(string); ok {
 			filter.Operator = operator
 		}
-		if value, ok := f["value"].(string); ok {
-			filter.Value = value
+		if v, exists := f["value"]; exists && v != nil {
+			switch val := v.(type) {
+			case string:
+				filter.Value = val
+			case float64:
+				filter.Value = fmt.Sprintf("%v", int(val))
+				if float64(int(val)) != val {
+					filter.Value = fmt.Sprintf("%v", val)
+				}
+			case int:
+				filter.Value = fmt.Sprintf("%d", val)
+			case bool:
+				filter.Value = fmt.Sprintf("%t", val)
+			default:
+				filter.Value = fmt.Sprintf("%v", val)
+			}
 		}
 		if filter.Field != "" {
 			filters = append(filters, filter)

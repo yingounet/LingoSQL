@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/lib/pq"
 	"lingosql/internal/utils"
 	"lingosql/pkg/types"
 )
@@ -357,6 +358,7 @@ func (e *PostgreSQLExecutor) GetTableIndexes(database, table string) ([]map[stri
 	if err := utils.ValidateTableName(table); err != nil {
 		return nil, err
 	}
+	// 仅取 attnum > 0 的列（跳过表达式索引中的 0），使用 pq.Array 正确扫描 text[]
 	query := `
 		SELECT 
 			i.relname AS index_name,
@@ -365,10 +367,12 @@ func (e *PostgreSQLExecutor) GetTableIndexes(database, table string) ([]map[stri
 			am.amname AS method,
 			pg_get_indexdef(ix.indexrelid) AS index_def,
 			obj_description(ix.indexrelid, 'pg_class') AS comment,
-			ARRAY(
-				SELECT a.attname
-				FROM unnest(ix.indkey) AS k(attnum)
-				JOIN pg_attribute a ON a.attrelid = ix.indrelid AND a.attnum = k.attnum
+			COALESCE(
+				(SELECT array_agg(a.attname ORDER BY k.ord)
+				 FROM unnest(ix.indkey) WITH ORDINALITY AS k(attnum, ord)
+				 JOIN pg_attribute a ON a.attrelid = ix.indrelid AND a.attnum = k.attnum
+				 WHERE a.attnum > 0 AND NOT a.attisdropped),
+				ARRAY[]::text[]
 			) AS columns
 		FROM pg_index ix
 		JOIN pg_class i ON i.oid = ix.indexrelid
@@ -390,13 +394,14 @@ func (e *PostgreSQLExecutor) GetTableIndexes(database, table string) ([]map[stri
 		var indexName, method, indexDef string
 		var isUnique, isPrimary bool
 		var comment sql.NullString
-		var columns []string
+		var columns pq.StringArray
 
 		if err := rows.Scan(
 			&indexName, &isUnique, &isPrimary, &method, &indexDef, &comment, &columns,
 		); err != nil {
 			return nil, err
 		}
+		columnsStr := []string(columns)
 
 		// 确定索引类型
 		var indexType string
@@ -415,7 +420,7 @@ func (e *PostgreSQLExecutor) GetTableIndexes(database, table string) ([]map[stri
 			"name":         indexName,
 			"type":         indexType,
 			"method":       method,
-			"columns":      columns,
+			"columns":      columnsStr,
 			"cardinality":  nil, // PostgreSQL 需要从 pg_stats 获取，这里简化处理
 			"where_clause": whereClause,
 		}
@@ -588,6 +593,21 @@ func toLowerPg(s string) string {
 	return string(b)
 }
 
+// pgValueToJSON 将 PostgreSQL 驱动返回值转为 JSON 可序列化类型
+func pgValueToJSON(val interface{}) interface{} {
+	if val == nil {
+		return nil
+	}
+	switch v := val.(type) {
+	case []byte:
+		return string(v)
+	case [16]byte:
+		return fmt.Sprintf("%x-%x-%x-%x-%x", v[0:4], v[4:6], v[6:8], v[8:10], v[10:16])
+	default:
+		return val
+	}
+}
+
 // GetTableRows 获取表数据
 func (e *PostgreSQLExecutor) GetTableRows(database, table string, filters []types.RowFilter, page, pageSize int) (*types.TableRowsResult, error) {
 	if err := utils.ValidateTableName(table); err != nil {
@@ -681,12 +701,7 @@ func (e *PostgreSQLExecutor) GetTableRows(database, table string, filters []type
 		row := make(map[string]interface{})
 		for i, col := range columns {
 			val := values[i]
-			// 处理 []byte 类型
-			if b, ok := val.([]byte); ok {
-				row[col.Name] = string(b)
-			} else {
-				row[col.Name] = val
-			}
+			row[col.Name] = pgValueToJSON(val)
 		}
 		resultRows = append(resultRows, row)
 	}

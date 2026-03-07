@@ -29,14 +29,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed as vueComputed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { createTable } from '@/api/tableAdmin'
 import { useConnectionStore } from '@/store/connection'
 
 const connectionStore = useConnectionStore()
-const dbType = computed(() => connectionStore.currentConnection?.db_type ?? 'mysql')
+const dbType = vueComputed(() => connectionStore.currentConnection?.db_type ?? 'mysql')
 
 const props = defineProps<{
   modelValue: boolean
@@ -48,7 +48,7 @@ const emit = defineEmits<{
   'success': []
 }>()
 
-const visible = computed({
+const visible = vueComputed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })

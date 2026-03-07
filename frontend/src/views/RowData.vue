@@ -11,7 +11,7 @@
           刷新
         </el-button>
         <el-dropdown @command="doExport" trigger="click">
-          <el-button type="primary" :disabled="!currentTableName || rows.length === 0">
+          <el-button type="primary" :disabled="!currentTableName || (rows?.length ?? 0) === 0">
             <el-icon><Download /></el-icon>
             导出
             <el-icon class="el-icon--right"><ArrowDown /></el-icon>
@@ -236,7 +236,7 @@
         </template>
 
         <el-table 
-          :data="rows" 
+          :data="rows ?? []" 
           v-loading="loadingData"
           stripe
           border
@@ -1125,9 +1125,9 @@ async function loadTableData() {
       { page: pagination.page, pageSize: pagination.pageSize }
     )
 
-    columns.value = result.columns
-    rows.value = result.rows
-    pagination.total = result.total
+    columns.value = result.columns ?? []
+    rows.value = result.rows ?? []
+    pagination.total = result.total ?? 0
 
     // 初始化选中的列
     if (selectedColumns.value.length === 0) {
