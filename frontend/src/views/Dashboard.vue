@@ -16,51 +16,6 @@
       description="Overview of your database connections and recent activity"
     />
     
-    <!-- 状态卡片 -->
-    <div class="stats-cards">
-      <div class="stat-card">
-        <div class="stat-icon cpu">
-          <el-icon :size="24"><Cpu /></el-icon>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">CPU USAGE</span>
-          <span class="stat-value">24.8%</span>
-          <span class="stat-trend success">
-            <el-icon :size="12"><Bottom /></el-icon>
-            Stable usage
-          </span>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon memory">
-          <el-icon :size="24"><Coin /></el-icon>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">MEMORY</span>
-          <span class="stat-value">6.2 <small>GB</small></span>
-          <span class="stat-trend warning">
-            <el-icon :size="12"><Warning /></el-icon>
-            78% of allocated
-          </span>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon connections">
-          <el-icon :size="24"><ConnectionIcon /></el-icon>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">ACTIVE CONNS</span>
-          <span class="stat-value">{{ connectionStore.connections.length || 0 }}</span>
-          <span class="stat-trend success">
-            <el-icon :size="12"><Top /></el-icon>
-            +12% peak today
-          </span>
-        </div>
-      </div>
-    </div>
-    
     <!-- 快捷操作 -->
     <div class="quick-actions">
       <h2 class="section-title">
@@ -172,17 +127,12 @@ import { getFavorites, recordFavoriteUse } from '@/api/favorite'
 import type { Connection } from '@/types/connection'
 import type { Favorite } from '@/types/favorite'
 import { 
-  Cpu, 
-  Coin, 
   Connection as ConnectionIcon, 
   Lightning, 
   EditPen, 
   Grid, 
   Upload,
   Plus,
-  Top,
-  Bottom,
-  Warning,
   Star,
   Document
 } from '@element-plus/icons-vue'
@@ -313,90 +263,6 @@ onMounted(() => {
 
 .security-notice {
   margin-bottom: var(--spacing-lg);
-}
-
-/* 状态卡片 */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-}
-
-.stat-card {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  background-color: var(--color-background);
-  border-radius: var(--border-radius-large);
-  box-shadow: var(--shadow-sm);
-}
-
-.stat-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--border-radius-medium);
-  flex-shrink: 0;
-}
-
-.stat-icon.cpu {
-  background-color: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
-.stat-icon.memory {
-  background-color: var(--color-warning-soft);
-  color: var(--color-warning);
-}
-
-.stat-icon.connections {
-  background-color: var(--color-success-soft);
-  color: var(--color-success);
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-tertiary);
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  line-height: 1.2;
-}
-
-.stat-value small {
-  font-size: 16px;
-  font-weight: 400;
-}
-
-.stat-trend {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.stat-trend.success {
-  color: var(--color-success);
-}
-
-.stat-trend.warning {
-  color: var(--color-warning);
 }
 
 /* 快捷操作 */
@@ -594,10 +460,6 @@ onMounted(() => {
 
 /* 响应式 */
 @media (max-width: 768px) {
-  .stats-cards {
-    grid-template-columns: 1fr;
-  }
-  
   .actions-grid {
     grid-template-columns: 1fr;
   }
