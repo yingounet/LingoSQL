@@ -18,6 +18,13 @@ type Config struct {
 	CORS       CORSConfig       `mapstructure:"cors"`
 	RateLimit  RateLimitConfig  `mapstructure:"rate_limit"`
 	Log        LogConfig        `mapstructure:"log"`
+	Backup     BackupConfig     `mapstructure:"backup"`
+}
+
+// BackupConfig 备份配置
+type BackupConfig struct {
+	RootPath       string `mapstructure:"root_path"`        // 备份存储根目录
+	MaxFileSizeMB  int    `mapstructure:"max_file_size_mb"` // 单文件最大大小（MB），0 表示不拆分
 }
 
 type ServerConfig struct {
@@ -77,6 +84,7 @@ func Load(configPath string) error {
 	_ = viper.BindEnv("rate_limit.default_rpm", "RATE_LIMIT_RPM")
 	_ = viper.BindEnv("rate_limit.polling_rpm", "POLLING_RATE_LIMIT_RPM")
 	_ = viper.BindEnv("rate_limit.enabled", "RATE_LIMIT_ENABLED")
+	_ = viper.BindEnv("backup.root_path", "BACKUP_ROOT_PATH")
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {
@@ -98,6 +106,14 @@ func Load(configPath string) error {
 		if err := os.MkdirAll(dataDir, 0755); err != nil {
 			return fmt.Errorf("创建数据目录失败: %w", err)
 		}
+	}
+
+	// 备份目录默认值
+	if AppConfig.Backup.RootPath == "" {
+		AppConfig.Backup.RootPath = "./data/backups"
+	}
+	if err := os.MkdirAll(AppConfig.Backup.RootPath, 0755); err != nil {
+		return fmt.Errorf("创建备份目录失败: %w", err)
 	}
 
 	return nil

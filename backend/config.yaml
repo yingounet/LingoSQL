@@ -25,3 +25,8 @@ rate_limit:
   enabled: false
   default_rpm: 120
   polling_rpm: 30
+
+# 备份配置
+backup:
+  root_path: ./data/backups      # 备份存储目录，Docker 可挂载卷
+  max_file_size_mb: 100          # 单文件最大大小（MB），0 表示不拆分

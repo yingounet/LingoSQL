@@ -13,10 +13,10 @@ COPY . .
 # 构建应用（CGO_ENABLED=0 纯静态二进制）
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o server ./cmd/server
 
-# 运行阶段（最小化镜像，无需 sqlite 运行时）
+# 运行阶段（含 mysqldump、pg_dump 用于备份）
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates mysql-client postgresql-client
 
 WORKDIR /app
 

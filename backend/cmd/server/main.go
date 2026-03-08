@@ -121,9 +121,9 @@ func main() {
 	exportHandler := handler.NewExportHandler(taskService, exportService, auditService)
 	rowDataHandler := handler.NewRowDataHandler(rowDataService, tableService)
 	dbObjectsHandler := handler.NewDbObjectsHandler(dbObjectsService)
-	maintenanceHandler := handler.NewMaintenanceHandler(maintenanceService)
+	maintenanceHandler := handler.NewMaintenanceHandler(maintenanceService, taskService)
 	auditHandler := handler.NewAuditHandler(auditService)
-	taskHandler := handler.NewTaskHandler(taskService, importService, exportService)
+	taskHandler := handler.NewTaskHandler(taskService, importService, exportService, maintenanceService)
 	installHandler := handler.NewInstallHandler(installService, auditService, systemSettingsService)
 
 	// 启动连接池清理任务
@@ -350,6 +350,11 @@ func main() {
 			// 数据库维护
 			admin.POST("/backup", maintenanceHandler.BackupDatabase)
 			admin.POST("/restore", maintenanceHandler.RestoreDatabase)
+
+			// 备份管理
+			admin.GET("/backups", maintenanceHandler.ListBackups)
+			admin.GET("/backups/:id/download", maintenanceHandler.DownloadBackup)
+			admin.DELETE("/backups/:id", maintenanceHandler.DeleteBackup)
 		}
 
 		// 数据导入

@@ -13,16 +13,18 @@ import (
 )
 
 type TaskHandler struct {
-	taskService   *service.TaskService
-	importService *service.ImportService
-	exportService *service.ExportService
+	taskService        *service.TaskService
+	importService      *service.ImportService
+	exportService      *service.ExportService
+	maintenanceService *service.MaintenanceService
 }
 
-func NewTaskHandler(taskService *service.TaskService, importService *service.ImportService, exportService *service.ExportService) *TaskHandler {
+func NewTaskHandler(taskService *service.TaskService, importService *service.ImportService, exportService *service.ExportService, maintenanceService *service.MaintenanceService) *TaskHandler {
 	return &TaskHandler{
-		taskService:   taskService,
-		importService: importService,
-		exportService: exportService,
+		taskService:        taskService,
+		importService:      importService,
+		exportService:      exportService,
+		maintenanceService: maintenanceService,
 	}
 }
 
@@ -32,9 +34,16 @@ func (h *TaskHandler) GetTasks(c *gin.Context) {
 	if !ok {
 		return
 	}
-	page, _ := strconv.Atoi(c.Query("page"))
-	pageSize, _ := strconv.Atoi(c.Query("page_size"))
-	response, err := h.taskService.ListByUser(userID, page, pageSize)
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	taskType := c.Query("type")
+	var response *models.TaskListResponse
+	var err error
+	if taskType != "" {
+		response, err = h.taskService.ListByUserAndType(userID, taskType, page, pageSize)
+	} else {
+		response, err = h.taskService.ListByUser(userID, page, pageSize)
+	}
 	if err != nil {
 		utils.InternalServerError(c, err.Error())
 		return
@@ -133,6 +142,29 @@ func (h *TaskHandler) RetryTask(c *gin.Context) {
 			_ = h.taskService.CompleteSuccess(newTask.ID, result)
 		}()
 		utils.Success(c, newTask)
+	case "BACKUP_DATABASE":
+		var payload models.BackupRequest
+		if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
+			utils.BadRequest(c, "任务参数解析失败")
+			return
+		}
+		newTask, err := h.taskService.Create(userID, "BACKUP_DATABASE", payload)
+		if err != nil {
+			utils.InternalServerError(c, err.Error())
+			return
+		}
+		go func() {
+			if err := h.taskService.Start(newTask.ID); err != nil {
+				return
+			}
+			result, err := h.maintenanceService.RunBackup(payload.ConnectionID, userID, &payload, newTask.ID, h.taskService)
+			if err != nil {
+				_ = h.taskService.CompleteFailure(newTask.ID, err)
+				return
+			}
+			_ = h.taskService.CompleteSuccess(newTask.ID, result)
+		}()
+		utils.Success(c, newTask)
 	default:
 		utils.BadRequest(c, "不支持重试的任务类型")
 	}
@@ -154,8 +186,33 @@ func (h *TaskHandler) DownloadTaskResult(c *gin.Context) {
 		utils.NotFound(c, err.Error())
 		return
 	}
-	if task.Type != "EXPORT_DATA" || task.Status != "success" {
-		utils.BadRequest(c, "任务尚未完成导出")
+	if task.Status != "success" {
+		utils.BadRequest(c, "任务尚未完成")
+		return
+	}
+
+	if task.Type == "BACKUP_DATABASE" {
+		var result map[string]interface{}
+		if err := json.Unmarshal([]byte(task.Result), &result); err != nil {
+			utils.InternalServerError(c, "备份结果解析失败")
+			return
+		}
+		backupID, _ := result["backup_id"].(string)
+		if backupID == "" {
+			utils.InternalServerError(c, "备份文件不存在")
+			return
+		}
+		path, name, err := h.maintenanceService.ServeBackupDownload(backupID, userID, "")
+		if err != nil {
+			utils.InternalServerError(c, err.Error())
+			return
+		}
+		c.FileAttachment(path, name)
+		return
+	}
+
+	if task.Type != "EXPORT_DATA" {
+		utils.BadRequest(c, "该任务类型不支持下载")
 		return
 	}
 	var result map[string]interface{}

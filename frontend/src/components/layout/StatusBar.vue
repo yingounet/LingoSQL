@@ -1,16 +1,17 @@
 <template>
   <footer class="status-bar">
-    <!-- 左侧：连接状态 -->
+    <!-- 左侧：连接状态（已支持） -->
     <div class="status-left">
       <span class="connection-status" :class="statusClass">
         <span class="status-dot"></span>
         {{ connectionLabel }}
       </span>
-      <span class="separator">|</span>
+      <span class="separator" v-if="dbInfo || currentDatabase">|</span>
       <span class="db-info" v-if="dbInfo">{{ dbInfo }}</span>
+      <span class="current-database" v-if="currentDatabase">{{ currentDatabase }}</span>
     </div>
-    
-    <!-- 中间：执行信息 -->
+
+    <!-- 中间：执行信息（待 queryStore.lastExecution 就绪后展示） -->
     <div class="status-center">
       <span v-if="executionTime" class="execution-time">
         <el-icon :size="12"><Clock /></el-icon>
@@ -21,31 +22,41 @@
         {{ rowCount }} rows
       </span>
     </div>
-    
+
     <!-- 右侧：编辑器信息 -->
     <div class="status-right">
-      <span class="encoding">UTF-8</span>
-      <span class="cursor-position">LN {{ line }}, COL {{ column }}</span>
+      <!-- 待连接/数据库 charset API 就绪后展示 -->
+      <span v-if="encoding" class="encoding">{{ encoding }}</span>
+      <!-- 待 editorStore.cursorPosition 或 Query 页 Monaco 联动就绪后展示 -->
+      <span v-if="showCursorPosition" class="cursor-position">LN {{ line }}, COL {{ column }}</span>
       <span class="version">VER {{ appVersion }}</span>
     </div>
   </footer>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useConnectionStore } from '@/store/connection'
 import { Clock, Document } from '@element-plus/icons-vue'
+// 应用版本（从 package.json 读取）
+import pkg from '../../../package.json'
 
 const connectionStore = useConnectionStore()
 
 // 应用版本
-const appVersion = ref('1.0.0')
+const appVersion = pkg.version
 
-// 模拟数据（实际应从 store 获取）
-const executionTime = ref<string | null>('0.14s')
-const rowCount = ref<number | null>(42)
-const line = ref(1)
-const column = ref(1)
+// 执行信息：待 queryStore 与 Query 页执行链路打通后，从 queryStore.lastExecution 获取
+const executionTime = computed<string | null>(() => null)
+const rowCount = computed<number | null>(() => null)
+
+// 字符编码：待连接详情或数据库 charset API 就绪后获取
+const encoding = computed<string | null>(() => null)
+
+// 光标位置：待 editorStore 或 Query 页 Monaco onDidChangeCursorPosition 联动后获取
+const line = computed(() => 1)
+const column = computed(() => 1)
+const showCursorPosition = computed(() => false)
 
 // 连接状态
 const statusClass = computed(() => ({
@@ -58,12 +69,15 @@ const connectionLabel = computed(() => {
   return `${connectionStore.currentConnection.name.toUpperCase()} CONNECTED`
 })
 
-// 数据库信息
+// 数据库类型
 const dbInfo = computed(() => {
   const conn = connectionStore.currentConnection
   if (!conn) return ''
   return `${conn.db_type?.toUpperCase() || 'SQL'}`
 })
+
+// 当前选中的数据库（connectionStore 已有）
+const currentDatabase = computed(() => connectionStore.currentDatabase)
 </script>
 
 <style scoped>
@@ -125,7 +139,8 @@ const dbInfo = computed(() => {
   color: var(--color-border);
 }
 
-.db-info {
+.db-info,
+.current-database {
   color: var(--color-text-secondary);
 }
 

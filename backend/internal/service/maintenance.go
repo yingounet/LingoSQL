@@ -157,14 +157,42 @@ func (s *MaintenanceService) AnalyzeTable(connectionID, userID int, database, ta
 	return err
 }
 
-// BackupDatabase 备份数据库（简化实现，返回SQL导出）
-func (s *MaintenanceService) BackupDatabase(connectionID, userID int, req *models.BackupRequest) (*models.BackupResponse, error) {
-	// 简化实现：返回备份ID和下载URL（实际应该生成文件）
-	backupID := fmt.Sprintf("backup_%d_%d", connectionID, time.Now().Unix())
+// BackupDatabase 创建备份任务并异步执行，立即返回 task
+func (s *MaintenanceService) BackupDatabase(connectionID, userID int, req *models.BackupRequest, taskService *TaskService) (*models.BackupResponse, error) {
+	if req.Database == "" {
+		conn, err := s.connectionDAO.GetByID(connectionID)
+		if err != nil {
+			return nil, err
+		}
+		var dbConfig models.DbConfig
+		if json.Unmarshal([]byte(conn.DbConfigJSON), &dbConfig) == nil && dbConfig.Database != "" {
+			req.Database = dbConfig.Database
+		}
+	}
+	if req.Database == "" {
+		return nil, errors.New("请指定要备份的数据库")
+	}
+
+	task, err := taskService.Create(userID, "BACKUP_DATABASE", req)
+	if err != nil {
+		return nil, err
+	}
+	if err := taskService.Start(task.ID); err != nil {
+		return nil, err
+	}
+
+	go func() {
+		result, err := s.RunBackup(connectionID, userID, req, task.ID, taskService)
+		if err != nil {
+			_ = taskService.CompleteFailure(task.ID, err)
+			return
+		}
+		_ = taskService.CompleteSuccess(task.ID, result)
+	}()
+
 	return &models.BackupResponse{
-		BackupID:    backupID,
-		DownloadURL: fmt.Sprintf("/api/admin/backup/%s/download", backupID),
-		FileSize:    0,
+		TaskID: &task.ID,
+		// backup_id、download_url、file_size 在任务完成后通过 result 返回
 	}, nil
 }
 
