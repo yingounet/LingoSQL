@@ -256,7 +256,6 @@
             :label="col.name"
             :min-width="getColumnWidth(col)"
             :sortable="col.isIndex ? 'custom' : false"
-            show-overflow-tooltip
           >
             <template #header>
               <span class="column-header">
@@ -288,9 +287,17 @@
                 :class="{ editable: !col.isPrimary }"
                 @dblclick="handleCellDblClick(row, col, $index)"
               >
-                <span :class="getCellClass(col, row[col.name])">
-                  {{ formatCellValue(col, row[col.name]) }}
-                </span>
+                <div class="cell-text-wrapper">
+                  <el-tooltip
+                    :content="truncateForTooltip(formatCellValue(col, row[col.name]))"
+                    placement="top"
+                    :show-after="200"
+                  >
+                    <span :class="getCellClass(col, row[col.name])" class="cell-value-truncate">
+                      {{ formatCellValue(col, row[col.name]) }}
+                    </span>
+                  </el-tooltip>
+                </div>
                 <el-icon v-if="!col.isPrimary" class="edit-hint"><Edit /></el-icon>
               </div>
             </template>
@@ -677,6 +684,9 @@ const textareaRef = ref()
 // 长文本阈值（超过此长度使用对话框编辑）
 const LONG_TEXT_THRESHOLD = 50
 
+// Tooltip 最大字符数，避免超长内容导致巨大悬浮层
+const TOOLTIP_MAX_LENGTH = 300
+
 // ==================== 计算属性 ====================
 
 // 计算可见列
@@ -769,6 +779,12 @@ function formatCellValue(col: ColumnDef, value: unknown): string {
     return JSON.stringify(value)
   }
   return String(value)
+}
+
+// 截断字符串用于 tooltip，避免超长内容导致巨大悬浮层
+function truncateForTooltip(text: string): string {
+  if (!text || text.length <= TOOLTIP_MAX_LENGTH) return text
+  return text.slice(0, TOOLTIP_MAX_LENGTH) + '...'
 }
 
 // 判断是否为空值运算符
@@ -1721,6 +1737,26 @@ onDeactivated(() => {
 .cell-value {
   font-family: var(--font-family-code);
   font-size: 13px;
+}
+
+.cell-text-wrapper {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cell-text-wrapper :deep(.el-tooltip__trigger) {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-value-truncate {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cell-value.numeric {
