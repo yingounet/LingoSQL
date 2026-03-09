@@ -1,16 +1,16 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    title="导入数据"
+    :title="t('importData.title')"
     width="800px"
     destroy-on-close
     @close="handleClose"
   >
     <el-steps :active="currentStep" finish-status="success" align-center>
-      <el-step title="选择文件" />
-      <el-step title="预览数据" />
-      <el-step title="字段映射" />
-      <el-step title="导入设置" />
+      <el-step :title="t('importData.stepSelectFile')" />
+      <el-step :title="t('importData.stepPreview')" />
+      <el-step :title="t('importData.stepMapping')" />
+      <el-step :title="t('importData.stepSettings')" />
     </el-steps>
 
     <!-- 步骤1: 选择文件 -->
@@ -24,12 +24,10 @@
         drag
       >
         <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-        <div class="el-upload__text">
-          将文件拖到此处，或<em>点击上传</em>
-        </div>
+        <div class="el-upload__text" v-html="t('importData.dragOrClick')" />
         <template #tip>
           <div class="el-upload__tip">
-            支持 CSV、Excel、JSON、SQL 文件
+            {{ t('importData.supportedFormats') }}
           </div>
         </template>
       </el-upload>
@@ -38,9 +36,9 @@
     <!-- 步骤2: 预览数据 -->
     <div v-if="currentStep === 1" class="step-content">
       <div class="preview-info">
-        <span>文件: {{ selectedFile?.name }}</span>
-        <span>行数: {{ previewData.data.length }}</span>
-        <span>列数: {{ previewData.headers.length }}</span>
+        <span>{{ t('importData.file') }}: {{ selectedFile?.name }}</span>
+        <span>{{ t('importData.rowCount') }}: {{ previewData.data.length }}</span>
+        <span>{{ t('importData.columnCount') }}: {{ previewData.headers.length }}</span>
       </div>
       <el-table
         :data="previewData.data.slice(0, 10)"
@@ -57,24 +55,24 @@
           show-overflow-tooltip
         >
           <template #default="{ row }">
-            {{ row[index] ?? '(空)' }}
+            {{ row[index] ?? t('importData.emptyCell') }}
           </template>
         </el-table-column>
       </el-table>
       <div v-if="previewData.data.length > 10" class="preview-more">
-        仅显示前 10 行，共 {{ previewData.data.length }} 行
+        {{ t('importData.previewHint', { n: previewData.data.length }) }}
       </div>
     </div>
 
     <!-- 步骤3: 字段映射 -->
     <div v-if="currentStep === 2" class="step-content">
       <el-table :data="fieldMappingData" stripe border>
-        <el-table-column label="文件列名" prop="fileColumn" width="200" />
-        <el-table-column label="表字段名" prop="tableColumn" width="200">
+        <el-table-column :label="t('importData.fileColumn')" prop="fileColumn" width="200" />
+        <el-table-column :label="t('importData.tableField')" prop="tableColumn" width="200">
           <template #default="{ row }">
             <el-select
               v-model="row.tableColumn"
-              placeholder="选择表字段"
+              :placeholder="t('importData.selectTableField')"
               filterable
               clearable
             >
@@ -92,14 +90,14 @@
             </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="数据类型" prop="dataType" width="150">
+        <el-table-column :label="t('importData.dataType')" prop="dataType" width="150">
           <template #default="{ row }">
             <el-tag size="small" type="info">
               {{ getColumnType(row.tableColumn) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100">
+        <el-table-column :label="t('common.actions')" width="100">
           <template #default="{ row, $index }">
             <el-button
               link
@@ -107,7 +105,7 @@
               size="small"
               @click="skipColumn($index)"
             >
-              跳过
+              {{ t('importData.skip') }}
             </el-button>
           </template>
         </el-table-column>
@@ -117,39 +115,39 @@
     <!-- 步骤4: 导入设置 -->
     <div v-if="currentStep === 3" class="step-content">
       <el-form :model="importSettings" label-width="120px">
-        <el-form-item label="跳过第一行">
+        <el-form-item :label="t('importData.skipFirstRow')">
           <el-switch v-model="importSettings.skipFirstRow" />
-          <div class="form-tip">如果文件第一行是表头，请开启此选项</div>
+          <div class="form-tip">{{ t('importData.skipFirstRowTip') }}</div>
         </el-form-item>
-        <el-form-item label="重复数据处理">
+        <el-form-item :label="t('importData.duplicateHandling')">
           <el-radio-group v-model="importSettings.onDuplicate">
-            <el-radio label="ignore">忽略</el-radio>
-            <el-radio label="update">更新</el-radio>
-            <el-radio label="error">报错</el-radio>
+            <el-radio label="ignore">{{ t('importData.duplicateIgnore') }}</el-radio>
+            <el-radio label="update">{{ t('importData.duplicateUpdate') }}</el-radio>
+            <el-radio label="error">{{ t('importData.duplicateError') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="批量大小">
+        <el-form-item :label="t('importData.batchSize')">
           <el-input-number
             v-model="importSettings.batchSize"
             :min="1"
             :max="1000"
           />
-          <div class="form-tip">每次导入的行数，建议 100-500</div>
+          <div class="form-tip">{{ t('importData.batchSizeTip') }}</div>
         </el-form-item>
       </el-form>
     </div>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleClose">取消</el-button>
-        <el-button v-if="currentStep > 0" @click="currentStep--">上一步</el-button>
+        <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
+        <el-button v-if="currentStep > 0" @click="currentStep--">{{ t('common.prev') }}</el-button>
         <el-button
           v-if="currentStep < 3"
           type="primary"
           @click="handleNext"
           :disabled="!canNext"
         >
-          下一步
+          {{ t('common.next') }}
         </el-button>
         <el-button
           v-if="currentStep === 3"
@@ -157,7 +155,7 @@
           @click="handleImport"
           :loading="importing"
         >
-          开始导入
+          {{ t('importData.startImport') }}
         </el-button>
       </div>
     </template>
@@ -166,6 +164,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { parseCSV, parseExcel, parseJSON, parseSQL } from '@/utils/importUtils'
@@ -184,6 +183,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   dbType: 'mysql'
 })
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
@@ -228,8 +228,8 @@ async function loadTableColumns() {
       props.dbType
     )
   } catch (error) {
-    console.error('加载表字段失败:', error)
-    ElMessage.error('加载表字段失败')
+    console.error('loadTableColumns failed:', error)
+    ElMessage.error(t('importData.loadFieldsFailed'))
   }
 }
 
@@ -250,7 +250,7 @@ async function handleFileChange(file: any) {
     } else if (fileName.endsWith('.sql')) {
       previewData.value = await parseSQL(selectedFile.value)
     } else {
-      ElMessage.error('不支持的文件格式')
+      ElMessage.error(t('importData.unsupportedFormat'))
       return
     }
 
@@ -271,7 +271,7 @@ async function handleFileChange(file: any) {
       }
     })
   } catch (error: any) {
-    ElMessage.error(error.message || '解析文件失败')
+    ElMessage.error(error.message || t('importData.parseFileFailed'))
   }
 }
 
@@ -293,7 +293,7 @@ function handleNext() {
     // 检查是否有映射的字段
     const hasMapping = fieldMappingData.value.some(m => m.tableColumn)
     if (!hasMapping) {
-      ElMessage.warning('请至少映射一个字段')
+      ElMessage.warning(t('importData.mapAtLeastOne'))
       return
     }
   }
@@ -344,13 +344,17 @@ async function handleImport() {
     })
 
     ElMessage.success(
-      `导入完成：成功 ${result.inserted_rows} 行，更新 ${result.updated_rows} 行，错误 ${result.error_rows} 行`
+      t('importData.importComplete', {
+        success: result.inserted_rows,
+        updated: result.updated_rows,
+        errors: result.error_rows,
+      })
     )
 
     emit('success')
     handleClose()
   } catch (error: any) {
-    ElMessage.error(error.message || '导入失败')
+    ElMessage.error(error.message || t('importData.importFailed'))
   } finally {
     importing.value = false
   }

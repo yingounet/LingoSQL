@@ -2,17 +2,17 @@
   <div class="query-page">
     <!-- 页面标题 -->
     <PageHeader 
-      title="SQL 查询" 
-      description="编写和执行 SQL 语句，查看查询结果"
+      :title="t('query.title')" 
+      :description="t('query.description')"
     >
       <template #actions>
-        <el-tooltip content="请先选择连接" :disabled="!!connectionStore.currentConnection">
+        <el-tooltip :content="t('query.selectConnectionHint')" :disabled="!!connectionStore.currentConnection">
           <el-button
             :disabled="!connectionStore.currentConnection"
             @click="openSaveFavoriteDialog"
           >
             <el-icon><Star /></el-icon>
-            收藏
+            {{ t('query.favorite') }}
           </el-button>
         </el-tooltip>
         <el-button-group>
@@ -37,14 +37,14 @@
                   :class="{ 'is-active': executeMode === 'selected' }"
                 >
                   <el-icon><Select /></el-icon>
-                  执行所选
+                  {{ t('query.executeSelected') }}
                 </el-dropdown-item>
                 <el-dropdown-item 
                   command="all"
                   :class="{ 'is-active': executeMode === 'all' }"
                 >
                   <el-icon><Document /></el-icon>
-                  执行所有
+                  {{ t('query.executeAll') }}
                 </el-dropdown-item>
                 <el-dropdown-item 
                   command="explain"
@@ -52,7 +52,7 @@
                   divided
                 >
                   <el-icon><View /></el-icon>
-                  查看执行计划
+                  {{ t('query.viewExecPlan') }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -63,7 +63,7 @@
 
     <!-- 未选择连接时的提示 -->
     <div v-if="!connectionStore.currentConnection" class="empty-state">
-      <el-empty description="请先从左侧选择一个数据库连接">
+      <el-empty :description="t('query.selectConnectionHint')">
         <template #image>
           <el-icon :size="64" class="empty-icon"><Connection /></el-icon>
         </template>
@@ -78,21 +78,21 @@
           <div class="card-header">
             <span class="card-title">
               <el-icon><EditPen /></el-icon>
-              SQL 编辑器
+              {{ t('query.sqlEditor') }}
             </span>
             <div class="editor-actions">
-              <el-button size="small" @click="handleFormatSQL" title="格式化 SQL (Ctrl+Shift+F)">
+              <el-button size="small" @click="handleFormatSQL" :title="t('common.format')">
                 <el-icon><DocumentCopy /></el-icon>
-                格式化
+                {{ t('common.format') }}
               </el-button>
               <el-button-group v-if="inTransaction" style="margin-left: 8px;">
-                <el-button size="small" type="success" @click="handleCommitTransaction" title="提交事务">
+                <el-button size="small" type="success" @click="handleCommitTransaction" :title="t('query.commit')">
                   <el-icon><Check /></el-icon>
-                  提交
+                  {{ t('query.commit') }}
                 </el-button>
-                <el-button size="small" type="danger" @click="handleRollbackTransaction" title="回滚事务">
+                <el-button size="small" type="danger" @click="handleRollbackTransaction" :title="t('query.rollback')">
                   <el-icon><Close /></el-icon>
-                  回滚
+                  {{ t('query.rollback') }}
                 </el-button>
               </el-button-group>
               <div class="editor-info" style="margin-left: 12px;">
@@ -103,11 +103,11 @@
                   {{ connectionStore.currentDatabase }}
                 </el-tag>
                 <el-tag v-if="inTransaction" size="small" type="warning">
-                  事务中
+                  {{ t('query.inTransaction') }}
                 </el-tag>
                 <span v-if="hasSelection" class="selection-hint">
                   <el-icon><Select /></el-icon>
-                  已选中文本
+                  {{ t('query.selectedText') }}
                 </span>
               </div>
             </div>
@@ -123,31 +123,31 @@
           <div class="card-header">
             <span class="card-title">
               <el-icon><List /></el-icon>
-              查询结果
+              {{ t('query.queryResults') }}
               <el-tag v-if="result" size="small" type="success" class="result-tag">
-                {{ formatNumber(result.rows.length) }} 条记录
+                {{ t('query.nRecords', { n: formatNumber(result.rows.length) }) }}
               </el-tag>
               <el-tag v-if="result" size="small" type="info" class="result-tag">
-                耗时 {{ result.execution_time_ms }} ms
+                {{ t('query.timeCost', { n: result.execution_time_ms }) }}
               </el-tag>
             </span>
             <div class="header-actions" v-if="hasResult">
               <el-button size="small" @click="handleClearResult">
                 <el-icon><Delete /></el-icon>
-                清除
+                {{ t('query.clear') }}
               </el-button>
               <el-dropdown @command="doExport" trigger="click">
                 <el-button size="small" :disabled="!result || result.rows.length === 0">
                   <el-icon><Download /></el-icon>
-                  导出
+                  {{ t('common.export') }}
                   <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item command="csv">导出为 CSV</el-dropdown-item>
-                    <el-dropdown-item command="excel">导出为 Excel</el-dropdown-item>
-                    <el-dropdown-item command="json">导出为 JSON</el-dropdown-item>
-                    <el-dropdown-item command="sql">导出为 SQL</el-dropdown-item>
+                    <el-dropdown-item command="csv">{{ t('query.exportCSV') }}</el-dropdown-item>
+                    <el-dropdown-item command="excel">{{ t('query.exportExcel') }}</el-dropdown-item>
+                    <el-dropdown-item command="json">{{ t('query.exportJSON') }}</el-dropdown-item>
+                    <el-dropdown-item command="sql">{{ t('query.exportSQL') }}</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -171,9 +171,9 @@
           <!-- 无数据情况（如 UPDATE/DELETE 语句） -->
           <div v-if="result!.columns.length === 0" class="no-data-result">
             <el-icon :size="48" class="success-icon"><CircleCheck /></el-icon>
-            <p class="success-text">执行成功</p>
+            <p class="success-text">{{ t('query.execSuccess') }}</p>
             <p class="affected-rows">
-              影响行数: <strong>{{ result!.rows_affected }}</strong>
+              {{ t('query.affectedRows') }}: <strong>{{ result!.rows_affected }}</strong>
             </p>
           </div>
 
@@ -209,7 +209,7 @@
             <template #empty>
               <div class="table-empty">
                 <el-icon :size="48"><DocumentRemove /></el-icon>
-                <p>查询结果为空</p>
+                <p>{{ t('query.emptyResult') }}</p>
               </div>
             </template>
           </el-table>
@@ -217,13 +217,13 @@
           <!-- 结果统计 -->
           <div class="result-footer" v-if="result!.columns.length > 0">
             <span class="result-stats">
-              共 {{ formatNumber(result!.rows.length) }} 条记录
+              {{ t('query.totalNRecords', { n: formatNumber(result!.rows.length) }) }}
               <template v-if="result!.rows_affected > 0">
-                | 影响行数: {{ result!.rows_affected }}
+                | {{ t('query.affectedRows') }}: {{ result!.rows_affected }}
               </template>
             </span>
             <span class="execution-time">
-              执行时间: {{ result!.execution_time_ms }} ms
+              {{ t('query.executionTime', { n: result!.execution_time_ms }) }}
             </span>
           </div>
         </template>
@@ -233,7 +233,7 @@
     <!-- 执行计划对话框 -->
     <el-dialog
       v-model="showExplainDialog"
-      title="执行计划"
+      :title="t('query.executionPlan')"
       width="900px"
       destroy-on-close
     >
@@ -249,7 +249,7 @@
           />
         </el-table>
         <div class="explain-footer">
-          <span>执行时间: {{ explainResult.execution_time_ms }} ms</span>
+          <span>{{ t('query.executionTime', { n: explainResult.execution_time_ms }) }}</span>
         </div>
       </div>
     </el-dialog>
@@ -257,25 +257,25 @@
     <!-- 保存为收藏对话框 -->
     <el-dialog
       v-model="saveFavoriteDialogVisible"
-      title="保存为收藏"
+      :title="t('query.saveAsFavorite')"
       width="560px"
       destroy-on-close
       @close="saveFavoriteForm = { name: '', description: '' }; saveFavoriteSql = ''"
     >
       <el-form :model="saveFavoriteForm" label-width="80px">
-        <el-form-item label="名称" required>
-          <el-input v-model="saveFavoriteForm.name" placeholder="收藏名称" maxlength="200" show-word-limit />
+        <el-form-item :label="t('query.favoriteName')" required>
+          <el-input v-model="saveFavoriteForm.name" :placeholder="t('query.favoriteNamePlaceholder')" maxlength="200" show-word-limit />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="saveFavoriteForm.description" type="textarea" rows="2" placeholder="可选" />
+        <el-form-item :label="t('query.favoriteDesc')">
+          <el-input v-model="saveFavoriteForm.description" type="textarea" rows="2" :placeholder="t('common.optional')" />
         </el-form-item>
         <el-form-item label="SQL">
-          <el-input v-model="saveFavoriteSql" type="textarea" :rows="6" readonly placeholder="当前编辑器内容" />
+          <el-input v-model="saveFavoriteSql" type="textarea" :rows="6" readonly :placeholder="t('query.currentEditorContent')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="saveFavoriteDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saveFavoriteLoading" @click="submitSaveFavorite">保存</el-button>
+        <el-button @click="saveFavoriteDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saveFavoriteLoading" @click="submitSaveFavorite">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -283,6 +283,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, onActivated, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import {
   CaretRight,
@@ -321,6 +322,7 @@ import { registerSqlCompletionProvider } from '@/utils/monacoSqlCompletion'
 
 // ==================== Store ====================
 
+const { t } = useI18n()
 const connectionStore = useConnectionStore()
 const { theme: uiTheme } = useTheme()
 
@@ -372,7 +374,7 @@ const canExecute = computed(() => {
 
 // 执行按钮文案
 const executeButtonText = computed(() => {
-  return executeMode.value === 'selected' ? '执行所选' : '执行所有'
+  return executeMode.value === 'selected' ? t('query.executeSelected') : t('query.executeAll')
 })
 
 // 是否有结果
@@ -464,7 +466,7 @@ function initEditor() {
   }
 
   editor = monaco.editor.create(editorContainer.value, {
-    value: '-- 在此输入 SQL 语句\nSELECT * FROM ',
+    value: t('query.editorDefault'),
     language: 'sql',
     theme: uiTheme.value === 'dark' ? 'vs-dark' : 'vs',
     minimap: { enabled: false },
@@ -619,7 +621,7 @@ function handleFormatSQL() {
   const formatted = formatSQL(sql, dbType)
   
   model.setValue(formatted)
-  ElMessage.success('SQL 已格式化')
+  ElMessage.success(t('query.sqlFormatted'))
 }
 
 // 查看执行计划
@@ -628,7 +630,7 @@ async function handleExplainSQL() {
 
   const sql = getExecuteSQL()
   if (!sql) {
-    ElMessage.warning('请输入 SQL 语句')
+    ElMessage.warning(t('query.enterSql'))
     return
   }
 
@@ -641,7 +643,7 @@ async function handleExplainSQL() {
     showExplainDialog.value = true
   } catch (error: unknown) {
     const err = error as { response?: { data?: { message?: string } }; message?: string }
-    ElMessage.error(err.response?.data?.message || err.message || '获取执行计划失败')
+    ElMessage.error(err.response?.data?.message || err.message || t('query.getExecPlanFailed'))
   }
 }
 
@@ -656,10 +658,10 @@ async function handleBeginTransaction() {
       connectionStore.currentDatabase || undefined
     )
     inTransaction.value = true
-    ElMessage.success('事务已开始')
+    ElMessage.success(t('query.txStarted'))
   } catch (error: unknown) {
     const err = error as { response?: { data?: { message?: string } }; message?: string }
-    ElMessage.error(err.response?.data?.message || err.message || '开始事务失败')
+    ElMessage.error(err.response?.data?.message || err.message || t('query.txStartFailed'))
   } finally {
     transactionLoading.value = false
   }
@@ -676,10 +678,10 @@ async function handleCommitTransaction() {
       connectionStore.currentDatabase || undefined
     )
     inTransaction.value = false
-    ElMessage.success('事务已提交')
+    ElMessage.success(t('query.txCommitted'))
   } catch (error: unknown) {
     const err = error as { response?: { data?: { message?: string } }; message?: string }
-    ElMessage.error(err.response?.data?.message || err.message || '提交事务失败')
+    ElMessage.error(err.response?.data?.message || err.message || t('query.txCommitFailed'))
   } finally {
     transactionLoading.value = false
   }
@@ -696,10 +698,10 @@ async function handleRollbackTransaction() {
       connectionStore.currentDatabase || undefined
     )
     inTransaction.value = false
-    ElMessage.success('事务已回滚')
+    ElMessage.success(t('query.txRolledBack'))
   } catch (error: unknown) {
     const err = error as { response?: { data?: { message?: string } }; message?: string }
-    ElMessage.error(err.response?.data?.message || err.message || '回滚事务失败')
+    ElMessage.error(err.response?.data?.message || err.message || t('query.txRollbackFailed'))
   } finally {
     transactionLoading.value = false
   }
@@ -724,17 +726,17 @@ async function handleExecute() {
   const sql = getExecuteSQL()
   
   if (!sql) {
-    ElMessage.warning('请输入 SQL 语句')
+    ElMessage.warning(t('query.enterSql'))
     return
   }
   
   if (!connectionStore.currentConnection) {
-    ElMessage.warning('请先选择数据库连接')
+    ElMessage.warning(t('query.selectDbConnection'))
     return
   }
   
   if (!connectionStore.currentDatabase) {
-    ElMessage.warning('请先选择数据库')
+    ElMessage.warning(t('query.selectDatabase'))
     return
   }
   
@@ -748,7 +750,7 @@ async function handleExecute() {
       sql
     })
     
-    ElMessage.success(`查询执行成功，耗时 ${result.value.execution_time_ms} ms`)
+    ElMessage.success(t('query.queryExecSuccess', { n: result.value.execution_time_ms }))
   } catch (error: unknown) {
     console.error('查询执行失败:', error)
     const err = error as { 
@@ -763,7 +765,7 @@ async function handleExecute() {
     // 优先使用详细错误信息，其次使用响应消息，最后使用通用错误
     const detailError = err.response?.data?.data?.error
     const responseMessage = err.response?.data?.message
-    errorMessage.value = detailError || responseMessage || err.message || '查询执行失败'
+    errorMessage.value = detailError || responseMessage || err.message || t('query.queryExecFailed')
     result.value = null
     ElMessage.error(errorMessage.value)
   } finally {
@@ -792,7 +794,7 @@ const exportFormat = ref<'csv' | 'excel' | 'json' | 'sql'>('csv')
 
 function handleExport() {
   if (!result.value || result.value.rows.length === 0) {
-    ElMessage.warning('没有可导出的数据')
+    ElMessage.warning(t('query.noDataToExport'))
     return
   }
   exportDialogVisible.value = true
@@ -834,11 +836,11 @@ async function doExport(format: 'csv' | 'excel' | 'json' | 'sql') {
         exportToSQL(arrayData, result.value.columns, tableName, `query_result_${timestamp}.sql`)
         break
     }
-    ElMessage.success('导出成功')
+    ElMessage.success(t('query.exportSuccess'))
     exportDialogVisible.value = false
   } catch (error) {
     console.error('导出失败:', error)
-    ElMessage.error('导出失败')
+    ElMessage.error(t('query.exportFailed'))
   }
 }
 
@@ -848,7 +850,7 @@ function openSaveFavoriteDialog() {
   if (!connectionStore.currentConnection) return
   const sql = editor?.getModel()?.getValue() ?? ''
   if (!sql.trim()) {
-    ElMessage.warning('请输入要收藏的 SQL')
+    ElMessage.warning(t('query.enterSqlToFavorite'))
     return
   }
   saveFavoriteSql.value = sql
@@ -859,11 +861,11 @@ function openSaveFavoriteDialog() {
 async function submitSaveFavorite() {
   const name = saveFavoriteForm.value.name.trim()
   if (!name) {
-    ElMessage.warning('请输入收藏名称')
+    ElMessage.warning(t('query.enterFavoriteName'))
     return
   }
   if (!saveFavoriteSql.value.trim()) {
-    ElMessage.warning('请输入要收藏的 SQL')
+    ElMessage.warning(t('query.enterSqlToFavorite'))
     return
   }
   if (!connectionStore.currentConnection) return
@@ -876,10 +878,10 @@ async function submitSaveFavorite() {
       sql_query: saveFavoriteSql.value,
       description: saveFavoriteForm.value.description?.trim() || undefined,
     })
-    ElMessage.success('已收藏')
+    ElMessage.success(t('query.favorited'))
     saveFavoriteDialogVisible.value = false
   } catch (e: unknown) {
-    ElMessage.error((e as Error)?.message ?? '收藏失败')
+    ElMessage.error((e as Error)?.message ?? t('query.favoriteFailed'))
   } finally {
     saveFavoriteLoading.value = false
   }

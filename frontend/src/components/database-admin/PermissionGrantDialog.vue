@@ -1,25 +1,25 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="isGrant ? '授予权限' : '撤销权限'"
+    :title="isGrant ? t('userAdmin.grantPermission') : t('userAdmin.revokePermission')"
     width="500px"
     @close="handleClose"
   >
     <div v-if="target && user">
       <el-descriptions :column="1" border>
-        <el-descriptions-item label="用户">
+        <el-descriptions-item :label="t('userAdmin.user')">
           {{ getUserLabel(user) }}
         </el-descriptions-item>
-        <el-descriptions-item label="对象类型">
+        <el-descriptions-item :label="t('userAdmin.objectType')">
           {{ getTargetTypeLabel(target.type) }}
         </el-descriptions-item>
-        <el-descriptions-item label="对象名称">
+        <el-descriptions-item :label="t('userAdmin.objectName')">
           {{ target.name }}
         </el-descriptions-item>
       </el-descriptions>
       
       <div class="privileges-section" style="margin-top: 20px">
-        <div class="section-title">权限类型</div>
+        <div class="section-title">{{ t('userAdmin.permissionType') }}</div>
         <el-checkbox-group v-model="selectedPrivileges">
           <el-checkbox 
             v-for="priv in availablePrivileges" 
@@ -33,14 +33,14 @@
     </div>
     
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
       <el-button 
         type="primary" 
         @click="handleSubmit"
         :disabled="selectedPrivileges.length === 0"
         :loading="loading"
       >
-        {{ isGrant ? '授予' : '撤销' }}
+        {{ isGrant ? t('userAdmin.grant') : t('userAdmin.revoke') }}
       </el-button>
     </template>
   </el-dialog>
@@ -48,9 +48,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { PermissionNode, PrivilegeType } from '@/types/permissionAdmin'
 import type { DatabaseUser } from '@/types/userAdmin'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -97,9 +100,9 @@ function getUserLabel(user: DatabaseUser): string {
 
 function getTargetTypeLabel(type: string): string {
   const labels: Record<string, string> = {
-    database: '数据库',
-    table: '表',
-    column: '列'
+    database: t('userAdmin.objDatabase'),
+    table: t('userAdmin.objTable'),
+    column: t('userAdmin.objColumn')
   }
   return labels[type] || type
 }
@@ -118,7 +121,7 @@ function handleClose() {
 
 function handleSubmit() {
   if (selectedPrivileges.value.length === 0) {
-    ElMessage.warning('请至少选择一个权限')
+    ElMessage.warning(t('userAdmin.selectAtLeastOne'))
     return
   }
   

@@ -2,13 +2,13 @@
   <div class="register-container">
     <el-card class="register-card">
       <template #header>
-        <h2>注册 LingoSQL</h2>
+        <h2>{{ t('auth.registerLingoSQL') }}</h2>
       </template>
       <el-alert
         v-if="allowRegistration === false"
-        title="系统已关闭公开注册"
+        :title="t('auth.registrationClosed')"
         type="info"
-        description="请联系管理员获取账号，或使用已有账号登录。"
+        :description="t('auth.registrationClosedDesc')"
         show-icon
         class="register-alert"
       />
@@ -21,52 +21,54 @@
         class="register-form"
         @submit.prevent="handleRegister"
       >
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="请输入用户名（至少3个字符）" />
+        <el-form-item :label="t('auth.username')" prop="username">
+          <el-input v-model="form.username" :placeholder="t('auth.enterUsernameMin3')" />
         </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="form.email" placeholder="请输入邮箱" />
+        <el-form-item :label="t('auth.email')" prop="email">
+          <el-input v-model="form.email" :placeholder="t('auth.enterEmail')" />
         </el-form-item>
-        <el-form-item label="密码" prop="password">
+        <el-form-item :label="t('auth.password')" prop="password">
           <el-input
             v-model="form.password"
             type="password"
-            placeholder="至少 8 位，需包含大小写字母与数字"
+            :placeholder="t('auth.passwordRequirement')"
           />
         </el-form-item>
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item :label="t('auth.confirmPassword')" prop="confirmPassword">
           <el-input
             v-model="form.confirmPassword"
             type="password"
-            placeholder="请再次输入密码"
+            :placeholder="t('auth.enterConfirmPassword')"
           />
         </el-form-item>
         <div class="form-actions">
           <el-form-item>
             <el-button type="primary" @click="handleRegister" :loading="loading" style="width: 100%">
-              注册
+              {{ t('auth.register') }}
             </el-button>
           </el-form-item>
           <el-form-item class="form-link-item">
-            <el-link type="primary" @click="$router.push('/login')">已有账号？立即登录</el-link>
+            <el-link type="primary" @click="$router.push('/login')">{{ t('auth.hasAccount') }}</el-link>
           </el-form-item>
         </div>
       </el-form>
       <div v-if="allowRegistration === false" class="register-back">
-        <el-link type="primary" @click="$router.push('/login')">返回登录</el-link>
+        <el-link type="primary" @click="$router.push('/login')">{{ t('auth.backToLogin') }}</el-link>
       </div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/store/auth'
 import { getInstallStatus } from '@/api/install'
 import type { FormInstance, FormRules } from 'element-plus'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
@@ -95,35 +97,35 @@ const form = reactive({
 
 const validateConfirmPassword = (rule: any, value: string, callback: Function) => {
   if (value !== form.password) {
-    callback(new Error('两次输入的密码不一致'))
+    callback(new Error(t('auth.passwordMismatch')))
   } else {
     callback()
   }
 }
 
-const rules: FormRules = {
+const rules = computed<FormRules>(() => ({
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' },
+    { required: true, message: t('auth.enterUsername'), trigger: 'blur' },
+    { min: 3, max: 50, message: t('auth.usernameLength'), trigger: 'blur' },
   ],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
+    { required: true, message: t('auth.enterEmail'), trigger: 'blur' },
+    { type: 'email', message: t('auth.invalidEmail'), trigger: 'blur' },
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 8, message: '密码长度至少 8 位', trigger: 'blur' },
+    { required: true, message: t('auth.enterPassword'), trigger: 'blur' },
+    { min: 8, message: t('auth.passwordMinLength'), trigger: 'blur' },
     {
       pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
-      message: '密码需包含大小写字母与数字',
+      message: t('auth.passwordPattern'),
       trigger: 'blur',
     },
   ],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
+    { required: true, message: t('auth.enterConfirmPasswordRequired'), trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' },
   ],
-}
+}))
 
 const handleRegister = async () => {
   if (!formRef.value || allowRegistration.value === false) return
@@ -137,10 +139,10 @@ const handleRegister = async () => {
           email: form.email,
           password: form.password,
         })
-        ElMessage.success('注册成功')
+        ElMessage.success(t('auth.registerSuccess'))
         router.push('/')
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.message || '注册失败')
+        ElMessage.error(error.response?.data?.message || t('auth.registerFailed'))
       } finally {
         loading.value = false
       }

@@ -6,48 +6,51 @@
     border
     style="width: 100%"
   >
-    <el-table-column prop="id" label="任务 ID" width="90" />
-    <el-table-column label="数据库" min-width="120">
+    <el-table-column prop="id" :label="t('backup.taskId')" width="90" />
+    <el-table-column :label="t('backup.backupDatabase')" min-width="120">
       <template #default="{ row }">
         {{ getTaskDatabase(row) }}
       </template>
     </el-table-column>
-    <el-table-column label="备份范围" width="100">
+    <el-table-column :label="t('backup.scope')" width="100">
       <template #default="{ row }">
         {{ getTaskScope(row) }}
       </template>
     </el-table-column>
-    <el-table-column prop="status" label="状态" width="100">
+    <el-table-column prop="status" :label="t('historyList.status')" width="100">
       <template #default="{ row }">
         <el-tag :type="statusTagType(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="进度" width="100">
+    <el-table-column :label="t('backup.progress')" width="100">
       <template #default="{ row }">
         {{ row.progress }}%
       </template>
     </el-table-column>
-    <el-table-column prop="created_at" label="创建时间" width="180" />
-    <el-table-column label="操作" width="140" fixed="right">
+    <el-table-column prop="created_at" :label="t('dbAdmin.createdAt')" width="180" />
+    <el-table-column :label="t('common.actions')" width="140" fixed="right">
       <template #default="{ row }">
         <el-button v-if="row.status === 'running' || row.status === 'pending'" size="small" @click="handleCancel(row)">
-          取消
+          {{ t('common.cancel') }}
         </el-button>
         <el-button v-if="row.status === 'success'" size="small" type="primary" link @click="handleDownload(row)">
-          下载
+          {{ t('backup.download') }}
         </el-button>
       </template>
     </el-table-column>
     <template #empty>
-      <el-empty v-if="!loading" description="暂无备份任务" />
+      <el-empty v-if="!loading" :description="t('backup.noBackupTasks')" />
     </template>
   </el-table>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { getTasks, getTask, cancelTask, type TaskInfo } from '@/api/backup'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   refreshTrigger?: number
@@ -74,21 +77,21 @@ function getTaskScope(row: TaskInfo): string {
   try {
     const p = JSON.parse(row.payload || '{}')
     if (p.tables && Array.isArray(p.tables) && p.tables.length > 0) {
-      return `选表(${p.tables.length})`
+      return t('backup.selectedTables', { n: p.tables.length })
     }
-    return '全库'
+    return t('backup.fullDbLabel')
   } catch {
-    return '全库'
+    return t('backup.fullDbLabel')
   }
 }
 
 function statusText(status: string): string {
   const map: Record<string, string> = {
-    pending: '等待中',
-    running: '进行中',
-    success: '成功',
-    failed: '失败',
-    canceled: '已取消'
+    pending: t('backup.statusPending'),
+    running: t('backup.statusRunning'),
+    success: t('backup.statusSuccess'),
+    failed: t('backup.statusFailed'),
+    canceled: t('backup.statusCancelled')
   }
   return map[status] || status
 }
@@ -133,10 +136,10 @@ async function handleCancel(row: TaskInfo) {
   if (row.status !== 'running' && row.status !== 'pending') return
   try {
     await cancelTask(row.id)
-    ElMessage.success('已取消')
+    ElMessage.success(t('backup.cancelled'))
     await loadTasks()
   } catch (e: any) {
-    ElMessage.error(e?.message || '取消失败')
+    ElMessage.error(e?.message || t('backup.cancelFailed'))
   }
 }
 

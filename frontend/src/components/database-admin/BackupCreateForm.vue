@@ -2,19 +2,19 @@
   <el-card class="backup-create-form" shadow="never">
     <template #header>
       <div class="card-header">
-        <span>新建备份</span>
+        <span>{{ t('backup.newBackup') }}</span>
         <el-button link type="primary" @click="expanded = !expanded">
-          {{ expanded ? '收起' : '展开' }}
+          {{ expanded ? t('rowData.collapse') : t('rowData.expand') }}
           <el-icon><ArrowDown v-if="!expanded" /><ArrowUp v-else /></el-icon>
         </el-button>
       </div>
     </template>
     <el-collapse-transition>
       <el-form v-show="expanded" :model="form" label-width="120px" class="backup-form">
-        <el-form-item label="数据库" required>
+        <el-form-item :label="t('backup.backupDatabase')" required>
           <el-select
             v-model="form.database"
-            placeholder="选择数据库"
+            :placeholder="t('backup.selectDatabase')"
             filterable
             style="width: 280px"
           >
@@ -26,13 +26,13 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="备份范围">
+        <el-form-item :label="t('backup.backupScope')">
           <el-radio-group v-model="form.scope">
-            <el-radio value="full">全库</el-radio>
-            <el-radio value="tables">选表</el-radio>
+            <el-radio value="full">{{ t('backup.fullDb') }}</el-radio>
+            <el-radio value="tables">{{ t('backup.selectTables') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item v-if="form.scope === 'tables'" label="选择表">
+        <el-form-item v-if="form.scope === 'tables'" :label="t('backup.selectTablesLabel')">
           <div class="table-checkbox-group">
             <el-checkbox-group v-model="form.selectedTables">
               <el-checkbox
@@ -45,24 +45,24 @@
             </el-checkbox-group>
           </div>
           <div v-if="props.tables.length === 0 && form.database" class="no-tables-hint">
-            该数据库暂无表
+            {{ t('backup.noTablesInDb') }}
           </div>
         </el-form-item>
-        <el-form-item label="仅结构">
+        <el-form-item :label="t('backup.structureOnly')">
           <el-switch v-model="form.schemaOnly" />
-          <span class="form-hint">不备份数据，仅导出 CREATE TABLE 等结构</span>
+          <span class="form-hint">{{ t('backup.structureOnlyTip') }}</span>
         </el-form-item>
-        <el-form-item label="压缩">
+        <el-form-item :label="t('backup.compress')">
           <el-switch v-model="form.compress" />
-          <span class="form-hint">使用 gzip 压缩备份文件</span>
+          <span class="form-hint">{{ t('backup.compressTip') }}</span>
         </el-form-item>
-        <el-form-item label="单文件最大(MB)">
+        <el-form-item :label="t('backup.maxFileSize')">
           <el-input-number v-model="form.maxFileSizeMb" :min="0" :max="2048" />
-          <span class="form-hint">0 表示不拆分</span>
+          <span class="form-hint">{{ t('backup.maxFileSizeTip') }}</span>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="submitting" :disabled="!form.database" @click="handleSubmit">
-            开始备份
+            {{ t('backup.startBackup') }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -72,10 +72,13 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 import type { DatabaseInfo } from '@/types/databaseAdmin'
 import type { TableInfo } from '@/api/table'
 import type { CreateBackupRequest } from '@/api/backup'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   connectionId: number

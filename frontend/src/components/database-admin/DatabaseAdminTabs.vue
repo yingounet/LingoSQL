@@ -7,32 +7,32 @@
         class="admin-menu"
         @select="handleMenuSelect"
       >
-        <div class="menu-group-label">库与表</div>
+        <div class="menu-group-label">{{ t('dbAdmin.dbAndTable') }}</div>
         <el-menu-item v-if="adminPermissions?.has_database_admin" index="database">
           <el-icon><Folder /></el-icon>
-          <span>数据库管理</span>
-          <span class="menu-desc">创建、删除数据库</span>
+          <span>{{ t('dbAdmin.dbManagement') }}</span>
+          <span class="menu-desc">{{ t('dbAdmin.dbManagementDesc') }}</span>
         </el-menu-item>
         <el-menu-item index="table">
           <el-icon><Grid /></el-icon>
-          <span>表管理</span>
-          <span class="menu-desc">建表、删表</span>
+          <span>{{ t('dbAdmin.tableManagement') }}</span>
+          <span class="menu-desc">{{ t('dbAdmin.tableManagementDesc') }}</span>
         </el-menu-item>
         <el-menu-item index="backup">
           <el-icon><FolderOpened /></el-icon>
-          <span>备份与恢复</span>
-          <span class="menu-desc">备份、恢复、管理备份文件</span>
+          <span>{{ t('dbAdmin.backupRestore') }}</span>
+          <span class="menu-desc">{{ t('dbAdmin.backupRestoreDesc') }}</span>
         </el-menu-item>
-        <div v-if="adminPermissions?.has_user_admin || adminPermissions?.has_permission_admin" class="menu-group-label">用户与权限</div>
+        <div v-if="adminPermissions?.has_user_admin || adminPermissions?.has_permission_admin" class="menu-group-label">{{ t('dbAdmin.userAndPermission') }}</div>
         <el-menu-item v-if="adminPermissions?.has_user_admin" index="user">
           <el-icon><User /></el-icon>
-          <span>用户管理</span>
-          <span class="menu-desc">创建用户、改密、删用户</span>
+          <span>{{ t('dbAdmin.userManagement') }}</span>
+          <span class="menu-desc">{{ t('dbAdmin.userManagementDesc') }}</span>
         </el-menu-item>
         <el-menu-item v-if="adminPermissions?.has_permission_admin" index="permission">
           <el-icon><Key /></el-icon>
-          <span>权限管理</span>
-          <span class="menu-desc">授予、回收权限</span>
+          <span>{{ t('dbAdmin.permissionManagement') }}</span>
+          <span class="menu-desc">{{ t('dbAdmin.permissionManagementDesc') }}</span>
         </el-menu-item>
       </el-menu>
     </aside>
@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { Folder, FolderOpened, Grid, User, Key } from '@element-plus/icons-vue'
 import type { AdminPermission } from '@/types/databaseAdmin'
@@ -57,6 +58,8 @@ import TableManagement from './TableManagement.vue'
 import BackupManagement from './BackupManagement.vue'
 import UserManagement from './UserManagement.vue'
 import PermissionManagement from './PermissionManagement.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   adminPermissions?: AdminPermission | null

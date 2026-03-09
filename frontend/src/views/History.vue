@@ -2,18 +2,18 @@
   <div class="history-page">
     <!-- 页面标题 -->
     <PageHeader 
-      title="查询历史" 
-      description="查看用户执行和系统执行的 SQL 历史记录"
+      :title="t('history.title')" 
+      :description="t('history.description')"
     />
 
     <!-- 未选择连接时的提示 -->
     <div v-if="!connectionId" class="empty-state">
-      <el-empty description="请先选择连接">
+      <el-empty :description="t('history.selectConnectionFirst')">
         <template #image>
           <el-icon :size="64" class="empty-icon"><Connection /></el-icon>
         </template>
         <el-button type="primary" @click="handleGoToConnections">
-          前往连接管理
+          {{ t('history.goToConnections') }}
         </el-button>
       </el-empty>
     </div>
@@ -24,7 +24,7 @@
       <el-card class="content-card">
         <el-tabs v-model="activeTab" @tab-change="handleTabChange">
           <!-- 用户执行标签 -->
-          <el-tab-pane label="用户执行" name="user">
+          <el-tab-pane :label="t('history.userExecution')" name="user">
             <HistoryList
               :connection-id="connectionId"
               type="user"
@@ -38,7 +38,7 @@
           </el-tab-pane>
 
           <!-- 系统执行标签 -->
-          <el-tab-pane label="系统执行" name="system">
+          <el-tab-pane :label="t('history.systemExecution')" name="system">
             <HistoryList
               :connection-id="connectionId"
               type="system"
@@ -59,6 +59,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Connection } from '@element-plus/icons-vue'
 import PageHeader from '@/components/layout/PageHeader.vue'
@@ -66,6 +67,7 @@ import HistoryList from '@/components/history/HistoryList.vue'
 import { getUserHistory, getSystemHistory } from '@/api/history'
 import type { QueryHistory, QueryHistoryListResponse } from '@/types/history'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -106,7 +108,7 @@ async function loadUserHistory() {
     userHistoryList.value = response.list
     userTotal.value = response.total
   } catch (error: any) {
-    ElMessage.error(error.message || '加载用户执行历史失败')
+    ElMessage.error(error.message || t('history.loadUserFailed'))
   } finally {
     loadingUser.value = false
   }
@@ -126,7 +128,7 @@ async function loadSystemHistory() {
     systemHistoryList.value = response.list
     systemTotal.value = response.total
   } catch (error: any) {
-    ElMessage.error(error.message || '加载系统执行历史失败')
+    ElMessage.error(error.message || t('history.loadSystemFailed'))
   } finally {
     loadingSystem.value = false
   }

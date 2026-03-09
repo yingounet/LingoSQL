@@ -7,20 +7,20 @@
       show-icon
       closable
       @close="handleDismissNotice"
-      title="安全提醒：请在部署后尽快修改默认配置"
-      description="若仍使用默认 JWT_SECRET / ENCRYPTION_KEY / ALLOWED_ORIGINS，请立即在配置或环境变量中替换为安全值。"
+      :title="t('dashboard.securityNoticeTitle')"
+      :description="t('dashboard.securityNoticeDesc')"
     />
     <!-- 页面标题 -->
     <PageHeader 
-      title="Dashboard" 
-      description="Overview of your database connections and recent activity"
+      :title="t('dashboard.title')" 
+      :description="t('dashboard.description')"
     />
     
     <!-- 快捷操作 -->
     <div class="quick-actions">
       <h2 class="section-title">
         <el-icon :size="18"><Lightning /></el-icon>
-        Quick Actions
+        {{ t('dashboard.quickActions') }}
       </h2>
       <div class="actions-grid">
         <div class="action-card" @click="handleNewQuery">
@@ -28,8 +28,8 @@
             <el-icon :size="24"><EditPen /></el-icon>
           </div>
           <div class="action-info">
-            <span class="action-title">New Query</span>
-            <span class="action-desc">Open SQL editor</span>
+            <span class="action-title">{{ t('dashboard.newQuery') }}</span>
+            <span class="action-desc">{{ t('dashboard.newQueryDesc') }}</span>
           </div>
         </div>
         
@@ -38,8 +38,8 @@
             <el-icon :size="24"><Grid /></el-icon>
           </div>
           <div class="action-info">
-            <span class="action-title">Create Table</span>
-            <span class="action-desc">Schema designer</span>
+            <span class="action-title">{{ t('dashboard.createTable') }}</span>
+            <span class="action-desc">{{ t('dashboard.createTableDesc') }}</span>
           </div>
         </div>
         
@@ -48,8 +48,8 @@
             <el-icon :size="24"><Upload /></el-icon>
           </div>
           <div class="action-info">
-            <span class="action-title">Import CSV</span>
-            <span class="action-desc">Bulk data upload</span>
+            <span class="action-title">{{ t('dashboard.importCSV') }}</span>
+            <span class="action-desc">{{ t('dashboard.importCSVDesc') }}</span>
           </div>
         </div>
       </div>
@@ -60,10 +60,10 @@
       <div class="recent-favorites-header">
         <h2 class="section-title">
           <el-icon :size="18"><Star /></el-icon>
-          收藏的 SQL
+          {{ t('dashboard.favoritedSQL') }}
         </h2>
-        <span class="section-subtitle">最近使用</span>
-        <router-link to="/favorites" class="view-all-link">查看全部</router-link>
+        <span class="section-subtitle">{{ t('dashboard.recentlyUsed') }}</span>
+        <router-link to="/favorites" class="view-all-link">{{ t('dashboard.viewAll') }}</router-link>
       </div>
       <div v-loading="loadingRecentFavorites" class="recent-favorites-list">
         <template v-if="recentFavorites.length > 0">
@@ -80,8 +80,8 @@
         </template>
         <div v-else-if="!loadingRecentFavorites" class="recent-favorites-empty">
           <el-icon :size="28"><Star /></el-icon>
-          <span>暂无收藏的 SQL</span>
-          <span class="empty-hint">在 Query 中执行后可将语句加入收藏</span>
+          <span>{{ t('dashboard.noFavorites') }}</span>
+          <span class="empty-hint">{{ t('dashboard.noFavoritesHint') }}</span>
         </div>
       </div>
     </div>
@@ -91,11 +91,11 @@
       <div class="connections-header">
         <h2 class="section-title">
           <el-icon :size="18"><ConnectionIcon /></el-icon>
-          数据库连接
+          {{ t('dashboard.dbConnections') }}
         </h2>
         <el-button type="primary" @click="handleNewConnection">
           <el-icon><Plus /></el-icon>
-          新建连接
+          {{ t('connection.newConnection') }}
         </el-button>
       </div>
       <ConnectionList
@@ -118,6 +118,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useConnectionStore } from '@/store/connection'
 import PageHeader from '@/components/layout/PageHeader.vue'
@@ -137,6 +138,7 @@ import {
   Document
 } from '@element-plus/icons-vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const connectionStore = useConnectionStore()
 
@@ -216,11 +218,11 @@ async function handleUseFavorite(fav: Favorite) {
     try {
       const ok = await connectionStore.restoreState(fav.connection_id, fav.database || undefined)
       if (!ok) {
-        ElMessage.error('无法切换连接或数据库')
+        ElMessage.error(t('dashboard.cannotSwitchConnection'))
         return
       }
     } catch (e: unknown) {
-      ElMessage.error((e as Error).message || '切换连接失败')
+      ElMessage.error((e as Error).message || t('dashboard.switchFailed'))
       return
     }
   }

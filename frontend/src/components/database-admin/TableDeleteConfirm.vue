@@ -1,34 +1,34 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="删除表"
+    :title="t('dbAdmin.deleteTable')"
     width="500px"
   >
     <div class="delete-confirm" v-if="tableName">
       <el-alert type="warning" :closable="false" show-icon>
         <template #title>
           <div class="alert-content">
-            <p>您确定要删除表 <strong>{{ tableName }}</strong>（数据库：{{ database }}）吗？</p>
-            <p class="warning-text">此操作不可恢复，请谨慎操作！</p>
+            <p>{{ t('dbAdmin.deleteTableConfirm', { table: tableName, db: database }) }}</p>
+            <p class="warning-text">{{ t('dbAdmin.cannotUndo') }}</p>
           </div>
         </template>
       </el-alert>
       <div class="confirm-input" style="margin-top: 20px">
         <el-input
           v-model="confirmText"
-          placeholder="请输入表名以确认删除"
+          :placeholder="t('dbAdmin.enterTableNameToConfirm')"
         />
       </div>
     </div>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
       <el-button
         type="danger"
         :disabled="confirmText !== tableName"
         :loading="loading"
         @click="handleConfirm"
       >
-        确认删除
+        {{ t('dbAdmin.confirmDelete') }}
       </el-button>
     </template>
   </el-dialog>
@@ -36,6 +36,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean

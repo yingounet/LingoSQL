@@ -3,12 +3,12 @@
     <!-- 页面头部（非 embedded 模式显示） -->
     <div v-if="!embedded" class="list-header">
       <div class="header-left">
-        <h2 class="page-title">数据库连接</h2>
-        <p class="page-subtitle">管理您的数据库连接配置</p>
+        <h2 class="page-title">{{ t('connection.connections') }}</h2>
+        <p class="page-subtitle">{{ t('connection.manageConnections') }}</p>
       </div>
       <el-button type="primary" @click="$emit('new')">
         <el-icon><Plus /></el-icon>
-        新建连接
+        {{ t('connection.newConnection') }}
       </el-button>
     </div>
 
@@ -20,7 +20,7 @@
           :class="{ active: !filter.db_type }"
           @click="handleFilterType(null)"
         >
-          全部
+          {{ t('connection.all') }}
         </el-button>
         <el-button
           v-for="(config, type) in DB_TYPE_CONFIG"
@@ -34,7 +34,7 @@
       </div>
       <el-input
         v-model="searchInput"
-        placeholder="搜索连接..."
+        :placeholder="t('connection.searchPlaceholder')"
         clearable
         class="search-input"
         @input="handleSearch"
@@ -55,7 +55,7 @@
         @row-click="handleRowClick"
       >
         <!-- 状态指示器 + 名称 -->
-        <el-table-column label="连接名称" min-width="200">
+        <el-table-column :label="t('connection.connNameCol')" min-width="200">
           <template #default="{ row }">
             <div class="connection-name">
               <span
@@ -64,14 +64,14 @@
               ></span>
               <span class="name-text">{{ row.name }}</span>
               <el-tag v-if="row.is_default" size="small" type="info" class="default-tag">
-                默认
+                {{ t('connection.default') }}
               </el-tag>
             </div>
           </template>
         </el-table-column>
 
         <!-- 数据库类型 -->
-        <el-table-column label="类型" width="130">
+        <el-table-column :label="t('common.type')" width="130">
           <template #default="{ row }">
             <el-tag
               :style="{
@@ -87,19 +87,19 @@
         </el-table-column>
 
         <!-- 连接方式 -->
-        <el-table-column label="连接方式" width="120">
+        <el-table-column :label="t('connection.connMethodCol')" width="120">
           <template #default="{ row }">
             <span class="connection-type">
               <el-icon v-if="row.connection_type === 'ssh_tunnel'" class="ssh-icon">
                 <Lock />
               </el-icon>
-              {{ row.connection_type === 'direct' ? '直连' : 'SSH 隧道' }}
+              {{ row.connection_type === 'direct' ? t('connection.direct') : t('connection.sshTunnel') }}
             </span>
           </template>
         </el-table-column>
 
         <!-- 主机地址 -->
-        <el-table-column label="主机地址" min-width="180">
+        <el-table-column :label="t('connection.hostAddress')" min-width="180">
           <template #default="{ row }">
             <span class="host-address">
               {{ row.db_config.host }}:{{ row.db_config.port }}
@@ -108,16 +108,16 @@
         </el-table-column>
 
         <!-- 最后连接时间 -->
-        <el-table-column label="最后连接" width="180">
+        <el-table-column :label="t('connection.lastConnected')" width="180">
           <template #default="{ row }">
             <div class="last-connected">
-              {{ row.last_used_at ? formatDateTime(row.last_used_at) : '从未连接' }}
+              {{ row.last_used_at ? formatDateTime(row.last_used_at) : t('connection.neverConnected') }}
             </div>
           </template>
         </el-table-column>
 
         <!-- 操作按钮 -->
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column :label="t('common.actions')" width="200" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -125,21 +125,21 @@
                 link
                 @click.stop="handleConnect(row)"
               >
-                连接
+                {{ t('connection.connect') }}
               </el-button>
               <el-button
                 type="primary"
                 link
                 @click.stop="$emit('edit', row.id)"
               >
-                编辑
+                {{ t('common.edit') }}
               </el-button>
               <el-button
                 type="danger"
                 link
                 @click.stop="handleDelete(row)"
               >
-                删除
+                {{ t('common.delete') }}
               </el-button>
             </div>
           </template>
@@ -148,17 +148,19 @@
 
       <!-- 空状态 -->
       <div v-if="!loading && connections.length === 0" class="empty-state">
-        <el-empty description="暂无连接">
-          <el-button type="primary" @click="$emit('new')">创建第一个连接</el-button>
+        <el-empty :description="t('connection.noConnections')">
+          <el-button type="primary" @click="$emit('new')">{{ t('connection.createFirst') }}</el-button>
         </el-empty>
       </div>
 
       <!-- 分页 -->
       <div class="pagination-wrapper" v-if="pagination.total > 0">
         <span class="pagination-info">
-          显示 {{ (pagination.page - 1) * pagination.pageSize + 1 }} -
-          {{ Math.min(pagination.page * pagination.pageSize, pagination.total) }}
-          共 {{ pagination.total }} 条
+          {{ t('connection.showing', {
+            from: (pagination.page - 1) * pagination.pageSize + 1,
+            to: Math.min(pagination.page * pagination.pageSize, pagination.total),
+            total: pagination.total
+          }) }}
         </span>
         <el-pagination
           v-model:current-page="pagination.page"
@@ -174,10 +176,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Plus, Search, Lock } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useConnectionStore } from '@/store/connection'
 import { DB_TYPE_CONFIG, type DbType, type Connection } from '@/types/connection'
+
+const { t } = useI18n()
 
 // Props
 const props = withDefaults(
@@ -257,12 +262,12 @@ function handleRowClick(row: Connection) {
 // 处理连接
 async function handleConnect(connection: Connection) {
   try {
-    ElMessage.info('正在连接...')
+    ElMessage.info(t('connection.connecting'))
     await store.connectTo(connection.id)
-    ElMessage.success(`已连接到 ${connection.name}`)
+    ElMessage.success(t('connection.connectedTo', { name: connection.name }))
     emit('connect', connection)
   } catch (error: any) {
-    ElMessage.error(error.message || '连接失败')
+    ElMessage.error(error.message || t('connection.connFailed'))
   }
 }
 
@@ -270,11 +275,11 @@ async function handleConnect(connection: Connection) {
 async function handleDelete(connection: Connection) {
   try {
     await ElMessageBox.confirm(
-      `确定要删除连接 "${connection.name}" 吗？此操作不可撤销。`,
-      '删除确认',
+      t('connection.deleteConfirm', { name: connection.name }),
+      t('connection.deleteConfirmTitle'),
       {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
+        confirmButtonText: t('common.delete'),
+        cancelButtonText: t('common.cancel'),
         type: 'warning',
       }
     )
@@ -286,10 +291,10 @@ async function handleDelete(connection: Connection) {
       store.disconnect()
     }
 
-    ElMessage.success('连接已删除')
+    ElMessage.success(t('connection.connDeleted'))
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+      ElMessage.error(error.message || t('connection.deleteFailed'))
     }
   }
 }

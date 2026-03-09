@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="isEdit ? '编辑连接' : '新建连接'"
+    :title="isEdit ? t('connection.editConnection') : t('connection.newConnection')"
     width="680px"
     :close-on-click-modal="false"
     @close="handleClose"
@@ -14,21 +14,21 @@
       class="connection-form"
     >
       <!-- 连接类型选择 -->
-      <el-form-item label="连接方式">
+      <el-form-item :label="t('connection.connMethod')">
         <el-radio-group v-model="formData.connection_type" class="connection-type-radio">
           <el-radio-button value="direct">
             <el-icon><Connection /></el-icon>
-            直连
+            {{ t('connection.direct') }}
           </el-radio-button>
           <el-radio-button value="ssh_tunnel">
             <el-icon><Lock /></el-icon>
-            SSH 隧道
+            {{ t('connection.sshTunnel') }}
           </el-radio-button>
         </el-radio-group>
       </el-form-item>
 
       <!-- 数据库类型选择 -->
-      <el-form-item label="数据库类型" prop="db_type">
+      <el-form-item :label="t('connection.dbType')" prop="db_type">
         <div class="db-type-cards">
           <div
             v-for="(config, type) in DB_TYPE_CONFIG"
@@ -46,29 +46,29 @@
       </el-form-item>
 
       <!-- 连接名称 -->
-      <el-form-item label="连接名称" prop="name">
+      <el-form-item :label="t('connection.connName')" prop="name">
         <el-input
           v-model="formData.name"
-          placeholder="例如：Production MySQL"
+          :placeholder="t('connection.connNamePlaceholder')"
           maxlength="100"
         />
       </el-form-item>
 
       <!-- 数据库配置区域 -->
       <div class="form-section">
-        <h4 class="section-title">数据库配置</h4>
+        <h4 class="section-title">{{ t('connection.dbConfig') }}</h4>
         
         <el-row :gutter="16">
           <el-col :span="16">
-            <el-form-item label="主机地址" prop="db_config.host">
+            <el-form-item :label="t('connection.hostAddress')" prop="db_config.host">
               <el-input
                 v-model="formData.db_config.host"
-                placeholder="localhost 或 IP 地址"
+                :placeholder="t('connection.hostPlaceholder')"
               />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="端口" prop="db_config.port">
+            <el-form-item :label="t('connection.port')" prop="db_config.port">
               <el-input-number
                 v-model="formData.db_config.port"
                 :min="1"
@@ -82,39 +82,39 @@
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="用户名" prop="db_config.username">
+            <el-form-item :label="t('connection.username')" prop="db_config.username">
               <el-input
                 v-model="formData.db_config.username"
-                placeholder="数据库用户名"
+                :placeholder="t('connection.dbUsernamePlaceholder')"
               />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="密码" prop="db_config.password">
+            <el-form-item :label="t('connection.password')" prop="db_config.password">
               <el-input
                 v-model="formData.db_config.password"
                 type="password"
-                placeholder="数据库密码"
+                :placeholder="t('connection.dbPasswordPlaceholder')"
                 show-password
               />
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-form-item label="数据库名（可选）">
+        <el-form-item :label="t('connection.dbNameOptional')">
           <el-input
             v-model="formData.db_config.database"
-            placeholder="默认连接的数据库"
+            :placeholder="t('connection.defaultDb')"
           />
         </el-form-item>
 
         <!-- SSL 选项 -->
-        <el-form-item label="SSL 模式">
+        <el-form-item :label="t('connection.sslMode')">
           <el-select v-model="formData.db_config.options.ssl_mode" style="width: 100%">
-            <el-option value="disable" label="禁用 (disable)" />
-            <el-option value="require" label="要求 (require)" />
-            <el-option value="verify-ca" label="验证 CA (verify-ca)" />
-            <el-option value="verify-full" label="完全验证 (verify-full)" />
+            <el-option value="disable" :label="t('connection.sslDisable')" />
+            <el-option value="require" :label="t('connection.sslRequire')" />
+            <el-option value="verify-ca" :label="t('connection.sslVerifyCa')" />
+            <el-option value="verify-full" :label="t('connection.sslVerifyFull')" />
           </el-select>
         </el-form-item>
       </div>
@@ -123,20 +123,20 @@
       <div class="form-section" v-if="formData.connection_type === 'ssh_tunnel'">
         <h4 class="section-title">
           <el-icon><Lock /></el-icon>
-          SSH 隧道配置
+          {{ t('connection.sshConfig') }}
         </h4>
 
         <el-row :gutter="16">
           <el-col :span="16">
-            <el-form-item label="SSH 主机" prop="ssh_config.host">
+            <el-form-item :label="t('connection.sshHost')" prop="ssh_config.host">
               <el-input
                 v-model="formData.ssh_config.host"
-                placeholder="SSH 服务器地址"
+                :placeholder="t('connection.sshHostPlaceholder')"
               />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="SSH 端口" prop="ssh_config.port">
+            <el-form-item :label="t('connection.sshPort')" prop="ssh_config.port">
               <el-input-number
                 v-model="formData.ssh_config.port"
                 :min="1"
@@ -148,47 +148,47 @@
           </el-col>
         </el-row>
 
-        <el-form-item label="SSH 用户名" prop="ssh_config.username">
+        <el-form-item :label="t('connection.sshUsername')" prop="ssh_config.username">
           <el-input
             v-model="formData.ssh_config.username"
-            placeholder="SSH 登录用户名"
+            :placeholder="t('connection.sshUsernamePlaceholder')"
           />
         </el-form-item>
 
-        <el-form-item label="认证方式">
+        <el-form-item :label="t('connection.authMethod')">
           <el-radio-group v-model="formData.ssh_config.auth_type">
-            <el-radio value="password">密码认证</el-radio>
-            <el-radio value="private_key">私钥认证</el-radio>
+            <el-radio value="password">{{ t('connection.passwordAuth') }}</el-radio>
+            <el-radio value="private_key">{{ t('connection.privateKeyAuth') }}</el-radio>
           </el-radio-group>
         </el-form-item>
 
         <!-- 密码认证 -->
         <el-form-item
           v-if="formData.ssh_config.auth_type === 'password'"
-          label="SSH 密码"
+          :label="t('connection.sshPassword')"
           prop="ssh_config.password"
         >
           <el-input
             v-model="formData.ssh_config.password"
             type="password"
-            placeholder="SSH 登录密码"
+            :placeholder="t('connection.sshPasswordPlaceholder')"
             show-password
           />
         </el-form-item>
 
         <!-- 私钥认证 -->
         <template v-if="formData.ssh_config.auth_type === 'private_key'">
-          <el-form-item label="私钥" prop="ssh_config.private_key">
+          <el-form-item :label="t('connection.privateKey')" prop="ssh_config.private_key">
             <div class="private-key-input">
               <el-input
                 v-model="privateKeyFileName"
-                placeholder="选择私钥文件..."
+                :placeholder="t('connection.selectKeyFile')"
                 readonly
               >
                 <template #append>
                   <el-button @click="triggerFileInput">
                     <el-icon><Upload /></el-icon>
-                    选择文件
+                    {{ t('connection.selectFile') }}
                   </el-button>
                 </template>
               </el-input>
@@ -202,11 +202,11 @@
             </div>
           </el-form-item>
 
-          <el-form-item label="私钥密码（可选）">
+          <el-form-item :label="t('connection.privateKeyPassphrase')">
             <el-input
               v-model="formData.ssh_config.passphrase"
               type="password"
-              placeholder="如果私钥有密码保护"
+              :placeholder="t('connection.keyPassphrasePlaceholder')"
               show-password
             />
           </el-form-item>
@@ -219,10 +219,10 @@
         <el-icon v-else><CircleClose /></el-icon>
         <div class="test-result-content">
           <span class="test-result-title">
-            {{ testResult.connected ? '连接成功' : '连接失败' }}
+            {{ testResult.connected ? t('connection.testSuccess') : t('connection.testFailed') }}
           </span>
           <span v-if="testResult.connected" class="test-result-detail">
-            {{ testResult.version }} · 延迟 {{ testResult.latency_ms }}ms
+            {{ testResult.version }} · {{ t('connection.latency') }} {{ testResult.latency_ms }}ms
           </span>
           <span v-else class="test-result-detail">
             {{ testResult.error }}
@@ -238,16 +238,16 @@
           :loading="testing"
           :disabled="!canTest"
         >
-          {{ testing ? '测试中...' : '测试连接' }}
+          {{ testing ? t('connection.testing') : t('connection.testConnection') }}
         </el-button>
         <div class="footer-right">
-          <el-button @click="handleClose">取消</el-button>
+          <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
           <el-button
             type="primary"
             @click="handleSave"
             :loading="saving"
           >
-            {{ saving ? '保存中...' : '保存' }}
+            {{ saving ? t('connection.saving') : t('common.save') }}
           </el-button>
         </div>
       </div>
@@ -257,6 +257,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Connection, Lock, Upload, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -268,6 +269,8 @@ import {
   type ConnectionFormData,
   type TestResult,
 } from '@/types/connection'
+
+const { t } = useI18n()
 
 // Props
 const props = defineProps<{
@@ -309,32 +312,32 @@ const canTest = computed(() => {
   )
 })
 
-// 表单验证规则
-const formRules: FormRules = {
+// 表单验证规则（computed 以响应语言切换）
+const formRules = computed<FormRules>(() => ({
   name: [
-    { required: true, message: '请输入连接名称', trigger: 'blur' },
-    { max: 100, message: '连接名称不能超过100个字符', trigger: 'blur' },
+    { required: true, message: t('connection.enterConnName'), trigger: 'blur' },
+    { max: 100, message: t('connection.connNameTooLong'), trigger: 'blur' },
   ],
   db_type: [
-    { required: true, message: '请选择数据库类型', trigger: 'change' },
+    { required: true, message: t('connection.selectDbType'), trigger: 'change' },
   ],
   'db_config.host': [
-    { required: true, message: '请输入主机地址', trigger: 'blur' },
+    { required: true, message: t('connection.enterHost'), trigger: 'blur' },
   ],
   'db_config.port': [
-    { required: true, message: '请输入端口号', trigger: 'blur' },
+    { required: true, message: t('connection.enterPort'), trigger: 'blur' },
   ],
   'db_config.username': [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { required: true, message: t('connection.enterUsername'), trigger: 'blur' },
   ],
   'db_config.password': [
-    { required: true, message: '请输入密码', trigger: 'blur' },
+    { required: true, message: t('connection.enterPassword'), trigger: 'blur' },
   ],
   'ssh_config.host': [
     {
-      validator: (rule, value, callback) => {
+      validator: (_rule, value, callback) => {
         if (formData.value.connection_type === 'ssh_tunnel' && !value) {
-          callback(new Error('请输入 SSH 主机地址'))
+          callback(new Error(t('connection.enterSshHost')))
         } else {
           callback()
         }
@@ -344,9 +347,9 @@ const formRules: FormRules = {
   ],
   'ssh_config.username': [
     {
-      validator: (rule, value, callback) => {
+      validator: (_rule, value, callback) => {
         if (formData.value.connection_type === 'ssh_tunnel' && !value) {
-          callback(new Error('请输入 SSH 用户名'))
+          callback(new Error(t('connection.enterSshUsername')))
         } else {
           callback()
         }
@@ -356,13 +359,13 @@ const formRules: FormRules = {
   ],
   'ssh_config.password': [
     {
-      validator: (rule, value, callback) => {
+      validator: (_rule, value, callback) => {
         if (
           formData.value.connection_type === 'ssh_tunnel' &&
           formData.value.ssh_config.auth_type === 'password' &&
           !value
         ) {
-          callback(new Error('请输入 SSH 密码'))
+          callback(new Error(t('connection.enterSshPassword')))
         } else {
           callback()
         }
@@ -372,13 +375,13 @@ const formRules: FormRules = {
   ],
   'ssh_config.private_key': [
     {
-      validator: (rule, value, callback) => {
+      validator: (_rule, value, callback) => {
         if (
           formData.value.connection_type === 'ssh_tunnel' &&
           formData.value.ssh_config.auth_type === 'private_key' &&
           !value
         ) {
-          callback(new Error('请选择私钥文件'))
+          callback(new Error(t('connection.selectKeyFileReq')))
         } else {
           callback()
         }
@@ -386,7 +389,7 @@ const formRules: FormRules = {
       trigger: 'change',
     },
   ],
-}
+}))
 
 // 数据库类型变更
 function handleDbTypeChange(type: DbType) {
@@ -432,7 +435,7 @@ async function handleTestConnection() {
   } catch (error: any) {
     testResult.value = {
       connected: false,
-      error: error.message || '测试失败',
+      error: error.message || t('connection.testFailed'),
     }
   } finally {
     testing.value = false
@@ -454,15 +457,15 @@ async function handleSave() {
   try {
     if (isEdit.value && props.connectionId) {
       await store.updateConnection(props.connectionId, formData.value)
-      ElMessage.success('连接已更新')
+      ElMessage.success(t('connection.connUpdated'))
     } else {
       await store.createConnection(formData.value)
-      ElMessage.success('连接已创建')
+      ElMessage.success(t('connection.connCreated'))
     }
     emit('saved')
     handleClose()
   } catch (error: any) {
-    ElMessage.error(error.message || '保存失败')
+    ElMessage.error(error.message || t('connection.saveFailed'))
   } finally {
     saving.value = false
   }
@@ -497,7 +500,7 @@ async function loadConnection(id: number) {
         port: connection.db_config.port,
         database: connection.db_config.database || '',
         username: connection.db_config.username,
-        password: '', // 密码不回显
+        password: '',
         options: {
           ssl_mode: connection.db_config.options?.ssl_mode || 'disable',
           charset: connection.db_config.options?.charset || 'utf8mb4',

@@ -2,10 +2,10 @@
   <div class="backup-management">
     <!-- 当前操作库 -->
     <div class="current-db-bar" v-if="databaseOptions.length > 0">
-      <span class="current-db-label">当前操作库：</span>
+      <span class="current-db-label">{{ t('dbAdmin.currentDb') }}</span>
       <el-select
         v-model="selectedDatabase"
-        placeholder="选择数据库"
+        :placeholder="t('backup.selectDatabase')"
         clearable
         filterable
         class="current-db-select"
@@ -21,13 +21,13 @@
     </div>
     <div v-else class="no-db-tip">
       <el-alert type="info" :closable="false" show-icon>
-        <template #title>暂无可用数据库</template>
-        请先在「数据库列表」Tab 中选择数据库，或前往「数据库管理」创建数据库。
+        <template #title>{{ t('dbAdmin.noAvailableDatabases') }}</template>
+        {{ t('dbAdmin.selectDbFromList') }}
       </el-alert>
     </div>
 
     <div v-if="databaseOptions.length > 0 && !selectedDatabase" class="select-db-hint">
-      <span>请在上方选择要备份的数据库</span>
+      <span>{{ t('dbAdmin.selectDbToBackup') }}</span>
     </div>
 
     <template v-if="databaseOptions.length > 0 && selectedDatabase">
@@ -41,13 +41,13 @@
       />
 
       <el-tabs v-model="activeListTab" class="backup-tabs">
-        <el-tab-pane label="进行中任务" name="tasks">
+        <el-tab-pane :label="t('backup.runningTasks')" name="tasks">
           <BackupTaskList
             :refresh-trigger="refreshTrigger"
             @download="handleTaskDownload"
           />
         </el-tab-pane>
-        <el-tab-pane label="备份文件列表" name="files">
+        <el-tab-pane :label="t('backup.backupFiles')" name="files">
           <BackupFileList
             :connection-id="currentConnection?.id"
             :refresh-trigger="refreshTrigger"
@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useConnectionStore } from '@/store/connection'
 import { getDatabaseList } from '@/api/databaseAdmin'
@@ -72,6 +73,7 @@ import BackupCreateForm from './BackupCreateForm.vue'
 import BackupTaskList from './BackupTaskList.vue'
 import BackupFileList from './BackupFileList.vue'
 
+const { t } = useI18n()
 const connectionStore = useConnectionStore()
 const currentConnection = computed(() => connectionStore.currentConnection)
 
@@ -126,18 +128,18 @@ async function handleCreateBackup(req: CreateBackupRequest) {
   try {
     const res = await createBackup(req)
     if (res.task_id) {
-      ElMessage.success('备份任务已创建，请在下方查看进度')
+      ElMessage.success(t('backup.backupTaskCreated'))
       refreshTrigger.value++
     } else if (res.backup_id && res.download_url) {
-      ElMessage.success('备份完成')
+      ElMessage.success(t('backup.backupComplete'))
       refreshTrigger.value++
       window.open(res.download_url.startsWith('/') ? res.download_url : `/api${res.download_url}`, '_blank')
     } else {
-      ElMessage.success('备份任务已提交')
+      ElMessage.success(t('backup.backupSubmitted'))
       refreshTrigger.value++
     }
   } catch (e: any) {
-    ElMessage.error(e?.message || '创建备份失败')
+    ElMessage.error(e?.message || t('backup.createBackupFailed'))
   } finally {
     backupSubmitting.value = false
   }
@@ -152,12 +154,12 @@ function handleTaskDownload(task: TaskInfo) {
       window.open(url.startsWith('/') ? url : `/api${url}`, '_blank')
     }
   } catch {
-    ElMessage.warning('暂无下载地址')
+    ElMessage.warning(t('backup.noDownloadUrl'))
   }
 }
 
 function handleRestore(item: BackupFileInfo) {
-  ElMessage.info('恢复功能需在后端实现后启用')
+  ElMessage.info(t('backup.restoreTodo'))
 }
 
 watch(currentConnection, async () => {

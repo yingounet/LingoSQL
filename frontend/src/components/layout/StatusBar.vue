@@ -19,7 +19,7 @@
       </span>
       <span v-if="rowCount !== null" class="row-count">
         <el-icon :size="12"><Document /></el-icon>
-        {{ rowCount }} rows
+        {{ rowCount }} {{ t('sidebar.rows') }}
       </span>
     </div>
 
@@ -36,12 +36,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useConnectionStore } from '@/store/connection'
 import { Clock, Document } from '@element-plus/icons-vue'
 // 应用版本（从 package.json 读取）
 import pkg from '../../../package.json'
 
 const connectionStore = useConnectionStore()
+const { t } = useI18n()
 
 // 应用版本
 const appVersion = pkg.version
@@ -65,7 +67,7 @@ const statusClass = computed(() => ({
 }))
 
 const connectionLabel = computed(() => {
-  if (!connectionStore.currentConnection) return 'NO CONNECTION'
+  if (!connectionStore.currentConnection) return t('sidebar.noConnection')
   return `${connectionStore.currentConnection.name.toUpperCase()} CONNECTED`
 })
 

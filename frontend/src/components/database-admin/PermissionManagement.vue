@@ -4,7 +4,7 @@
     <div class="user-selector">
       <el-select
         v-model="selectedUser"
-        placeholder="选择用户"
+        :placeholder="t('userAdmin.selectUser')"
         @change="handleUserChange"
         style="width: 300px"
       >
@@ -50,12 +50,13 @@
     </div>
     
     <!-- 未选择用户提示 -->
-    <el-empty v-else description="请先选择一个用户" />
+    <el-empty v-else :description="t('userAdmin.selectUserFirst')" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useConnectionStore } from '@/store/connection'
 import { getUserList } from '@/api/userAdmin'
@@ -64,6 +65,7 @@ import type { DatabaseUser } from '@/types/userAdmin'
 import type { PermissionNode, GrantPermissionRequest } from '@/types/permissionAdmin'
 import PermissionGrantDialog from './PermissionGrantDialog.vue'
 
+const { t } = useI18n()
 const connectionStore = useConnectionStore()
 
 const currentConnection = computed(() => connectionStore.currentConnection)
@@ -81,18 +83,16 @@ const treeProps = {
   label: 'name'
 }
 
-// 加载用户列表
 async function loadUsers() {
   if (!currentConnection.value) return
   
   try {
     users.value = await getUserList(currentConnection.value.id)
   } catch (error: any) {
-    ElMessage.error(error.message || '加载用户列表失败')
+    ElMessage.error(error.message || t('userAdmin.loadUsersFailed'))
   }
 }
 
-// 获取用户键值
 function getUserKey(user: DatabaseUser): string {
   if (dbType.value === 'mysql') {
     return `${user.username}@${user.host || 'localhost'}`
@@ -100,12 +100,10 @@ function getUserKey(user: DatabaseUser): string {
   return user.username
 }
 
-// 获取用户标签
 function getUserLabel(user: DatabaseUser): string {
   return getUserKey(user)
 }
 
-// 用户选择变化
 async function handleUserChange(value: string) {
   if (!value) {
     selectedUserInfo.value = null
@@ -113,12 +111,10 @@ async function handleUserChange(value: string) {
     return
   }
   
-  // 找到选中的用户信息
   selectedUserInfo.value = users.value.find(u => getUserKey(u) === value) || null
   
   if (!selectedUserInfo.value || !currentConnection.value) return
   
-  // 加载权限树
   try {
     const [username, host] = value.split('@')
     permissionTree.value = await getPermissionTree(
@@ -127,11 +123,10 @@ async function handleUserChange(value: string) {
       dbType.value === 'mysql' ? host : undefined
     )
   } catch (error: any) {
-    ElMessage.error(error.message || '加载权限树失败')
+    ElMessage.error(error.message || t('userAdmin.loadPermFailed'))
   }
 }
 
-// 授予权限
 async function handleGrant(data: { privileges: string[], isGrant: boolean }) {
   if (!selectedUserInfo.value || !selectedNode.value || !currentConnection.value) return
   
@@ -144,7 +139,6 @@ async function handleGrant(data: { privileges: string[], isGrant: boolean }) {
     privileges: data.privileges as any[]
   }
   
-  // 根据类型设置database和table
   if (selectedNode.value.type === 'table' || selectedNode.value.type === 'column') {
     const pathParts = selectedNode.value.path.split('.')
     request.database = pathParts[0]
@@ -156,15 +150,14 @@ async function handleGrant(data: { privileges: string[], isGrant: boolean }) {
   try {
     if (data.isGrant) {
       await grantPermission(currentConnection.value.id, request)
-      ElMessage.success('权限授予成功')
+      ElMessage.success(t('userAdmin.grantSuccess'))
     } else {
       await revokePermission(currentConnection.value.id, request as any)
-      ElMessage.success('权限撤销成功')
+      ElMessage.success(t('userAdmin.revokeSuccess'))
     }
-    // 重新加载权限树
     await handleUserChange(selectedUser.value)
   } catch (error: any) {
-    ElMessage.error(error.message || '操作失败')
+    ElMessage.error(error.message || t('userAdmin.operationFailed'))
   }
 }
 

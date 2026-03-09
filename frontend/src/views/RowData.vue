@@ -8,33 +8,33 @@
       <template #actions>
         <el-button @click="handleRefresh" :loading="loadingData">
           <el-icon><Refresh /></el-icon>
-          刷新
+          {{ t('common.refresh') }}
         </el-button>
         <el-dropdown @command="doExport" trigger="click">
           <el-button type="primary" :disabled="!currentTableName || (rows?.length ?? 0) === 0">
             <el-icon><Download /></el-icon>
-            导出
+            {{ t('common.export') }}
             <el-icon class="el-icon--right"><ArrowDown /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="csv">导出为 CSV</el-dropdown-item>
-              <el-dropdown-item command="excel">导出为 Excel</el-dropdown-item>
-              <el-dropdown-item command="json">导出为 JSON</el-dropdown-item>
-              <el-dropdown-item command="sql">导出为 SQL</el-dropdown-item>
+              <el-dropdown-item command="csv">{{ t('query.exportCSV') }}</el-dropdown-item>
+              <el-dropdown-item command="excel">{{ t('query.exportExcel') }}</el-dropdown-item>
+              <el-dropdown-item command="json">{{ t('query.exportJSON') }}</el-dropdown-item>
+              <el-dropdown-item command="sql">{{ t('query.exportSQL') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
         <el-button @click="handleImport" :disabled="!currentTableName">
           <el-icon><Upload /></el-icon>
-          导入
+          {{ t('common.import') }}
         </el-button>
       </template>
     </PageHeader>
 
     <!-- 未选择表时的提示 -->
     <div v-if="!currentTableName" class="empty-state">
-      <el-empty description="请从左侧选择一个表查看数据">
+      <el-empty :description="t('rowData.selectTableHint')">
         <template #image>
           <el-icon :size="64" class="empty-icon"><Grid /></el-icon>
         </template>
@@ -49,13 +49,13 @@
           <div class="card-header">
             <span class="card-title">
               <el-icon><Filter /></el-icon>
-              筛选条件
+              {{ t('rowData.filterConditions') }}
               <el-tag v-if="filterConditions.length > 0" size="small" type="primary" class="condition-count-tag">
-                {{ filterConditions.length }} 个条件
+                {{ t('rowData.nConditions', { n: filterConditions.length }) }}
               </el-tag>
             </span>
             <el-button link type="primary" @click="toggleFilterExpand">
-              {{ filterExpanded ? '收起' : '展开' }}
+              {{ filterExpanded ? t('rowData.collapse') : t('rowData.expand') }}
               <el-icon>
                 <ArrowUp v-if="filterExpanded" />
                 <ArrowDown v-else />
@@ -77,12 +77,12 @@
                   <!-- 字段选择 -->
                   <el-select 
                     v-model="condition.field"
-                    placeholder="选择字段"
+                    :placeholder="t('rowData.selectField')"
                     filterable
                     class="field-select"
                     @change="handleFieldChange(condition)"
                   >
-                    <el-option-group label="索引字段" v-if="indexFields.length > 0">
+                    <el-option-group :label="t('rowData.indexedFields')" v-if="indexFields.length > 0">
                       <el-option 
                         v-for="field in indexFields" 
                         :key="field" 
@@ -95,7 +95,7 @@
                         </span>
                       </el-option>
                     </el-option-group>
-                    <el-option-group label="其他字段">
+                    <el-option-group :label="t('rowData.otherFields')">
                       <el-option 
                         v-for="col in nonIndexColumns" 
                         :key="col.name" 
@@ -114,7 +114,7 @@
                   <!-- 运算符选择 -->
                   <el-select 
                     v-model="condition.operator"
-                    placeholder="运算符"
+                    :placeholder="t('rowData.operator')"
                     class="operator-select"
                   >
                     <el-option 
@@ -135,7 +135,7 @@
                     @keyup.enter="handleSearch"
                   />
                   <div v-else class="null-placeholder">
-                    <span>无需输入值</span>
+                    <span>{{ t('rowData.noValueNeeded') }}</span>
                   </div>
 
                   <!-- 删除按钮 -->
@@ -152,7 +152,7 @@
               <!-- 空状态提示 -->
               <div v-if="filterConditions.length === 0" class="empty-conditions">
                 <el-icon><InfoFilled /></el-icon>
-                <span>暂无筛选条件，点击下方按钮添加</span>
+                <span>{{ t('rowData.noConditionsHint') }}</span>
               </div>
             </div>
 
@@ -160,11 +160,11 @@
             <div class="filter-actions">
               <div class="left-actions">
                 <el-button @click="addCondition" :icon="Plus">
-                  添加条件
+                  {{ t('rowData.addCondition') }}
                 </el-button>
                 <el-dropdown @command="handleQuickAdd" v-if="indexFields.length > 0">
                   <el-button>
-                    快速添加
+                    {{ t('rowData.quickAdd') }}
                     <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                   </el-button>
                   <template #dropdown>
@@ -184,11 +184,11 @@
               <div class="right-actions">
                 <el-button @click="handleReset" :disabled="filterConditions.length === 0">
                   <el-icon><RefreshLeft /></el-icon>
-                  重置
+                  {{ t('common.reset') }}
                 </el-button>
                 <el-button type="primary" @click="handleSearch" :loading="loadingData">
                   <el-icon><Search /></el-icon>
-                  查询
+                  {{ t('common.search') }}
                 </el-button>
               </div>
             </div>
@@ -202,33 +202,33 @@
           <div class="card-header">
             <span class="card-title">
               <el-icon><List /></el-icon>
-              数据记录
+              {{ t('rowData.dataRecords') }}
               <el-tag size="small" type="success" class="total-tag">
-                共 {{ formatNumber(pagination.total) }} 条
+                {{ t('rowData.totalN', { n: formatNumber(pagination.total) }) }}
               </el-tag>
             </span>
             <div class="header-actions">
               <el-button-group>
                 <el-button size="small" @click="handleBatchUpdate" :disabled="filterConditions.length === 0">
                   <el-icon><Edit /></el-icon>
-                  批量更新
+                  {{ t('rowData.batchUpdate') }}
                 </el-button>
                 <el-button size="small" type="danger" @click="handleBatchDelete" :disabled="filterConditions.length === 0">
                   <el-icon><Delete /></el-icon>
-                  批量删除
+                  {{ t('rowData.batchDelete') }}
                 </el-button>
               </el-button-group>
               <el-button-group style="margin-left: 8px;">
                 <el-button size="small" @click="handleCompareData">
                   <el-icon><DocumentCopy /></el-icon>
-                  数据对比
+                  {{ t('rowData.dataCompare') }}
                 </el-button>
                 <el-button size="small" @click="handleFindReplace">
                   <el-icon><Search /></el-icon>
-                  查找替换
+                  {{ t('rowData.findReplace') }}
                 </el-button>
               </el-button-group>
-              <el-tooltip content="列设置" placement="top">
+              <el-tooltip :content="t('rowData.columnSettings')" placement="top">
                 <el-button :icon="Setting" circle size="small" @click="showColumnSettings = true" />
               </el-tooltip>
             </div>
@@ -300,7 +300,7 @@
           <template #empty>
             <div class="table-empty">
               <el-icon :size="48"><DocumentRemove /></el-icon>
-              <p>暂无数据</p>
+              <p>{{ t('common.noData') }}</p>
             </div>
           </template>
         </el-table>
@@ -324,7 +324,7 @@
     <!-- 列设置抽屉 -->
     <el-drawer
       v-model="showColumnSettings"
-      title="列显示设置"
+      :title="t('rowData.columnSettings')"
       direction="rtl"
       size="300px"
     >
@@ -334,7 +334,7 @@
           :indeterminate="isIndeterminate"
           @change="handleSelectAllColumns"
         >
-          全选
+          {{ t('rowData.selectAll') }}
         </el-checkbox>
         <el-divider />
         <el-checkbox-group v-model="selectedColumns" class="column-list">
@@ -368,7 +368,7 @@
     <!-- 批量更新对话框 -->
     <el-dialog
       v-model="batchUpdateDialogVisible"
-      title="批量更新"
+      :title="t('rowData.batchUpdate')"
       width="600px"
       destroy-on-close
     >
@@ -380,30 +380,30 @@
         >
           <el-input
             v-model="batchUpdateForm[col.name]"
-            :placeholder="`输入 ${col.name} 的新值（留空则不更新此字段）`"
+            :placeholder="t('rowData.leaveEmptyToSkip', { name: col.name })"
             clearable
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="batchUpdateDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="doBatchUpdate">确定</el-button>
+        <el-button @click="batchUpdateDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="doBatchUpdate">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 数据对比对话框 -->
     <el-dialog
       v-model="compareDialogVisible"
-      title="数据对比"
+      :title="t('rowData.dataCompare')"
       width="700px"
       destroy-on-close
     >
       <el-form :model="compareForm" label-width="120px">
-        <el-form-item label="对比数据库">
-          <el-input v-model="compareForm.database2" placeholder="留空则使用当前数据库" />
+        <el-form-item :label="t('rowData.compareDatabase')">
+          <el-input v-model="compareForm.database2" :placeholder="t('rowData.leaveDatabaseEmpty')" />
         </el-form-item>
-        <el-form-item label="对比表">
-          <el-select v-model="compareForm.table2" placeholder="选择要对比的表" filterable>
+        <el-form-item :label="t('rowData.compareTable')">
+          <el-select v-model="compareForm.table2" :placeholder="t('rowData.selectCompareTable')" filterable>
             <el-option
               v-for="table in connectionStore.tables"
               :key="table.name"
@@ -412,11 +412,11 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="主键字段">
+        <el-form-item :label="t('rowData.keyColumns')">
           <el-select
             v-model="compareForm.keyColumns"
             multiple
-            placeholder="选择用于对比的主键字段"
+            :placeholder="t('rowData.selectKeyColumns')"
           >
             <el-option
               v-for="col in columns.filter(c => c.isPrimary || c.isIndex)"
@@ -428,21 +428,21 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="compareDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="doCompareData">开始对比</el-button>
+        <el-button @click="compareDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="doCompareData">{{ t('rowData.startCompare') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 查找替换对话框 -->
     <el-dialog
       v-model="findReplaceDialogVisible"
-      title="查找替换"
+      :title="t('rowData.findReplace')"
       width="600px"
       destroy-on-close
     >
       <el-form :model="findReplaceForm" label-width="100px">
-        <el-form-item label="字段">
-          <el-select v-model="findReplaceForm.column" placeholder="选择要查找替换的字段" filterable>
+        <el-form-item :label="t('common.field')">
+          <el-select v-model="findReplaceForm.column" :placeholder="t('rowData.selectFieldToReplace')" filterable>
             <el-option
               v-for="col in columns.filter(c => !c.isPrimary)"
               :key="col.name"
@@ -451,30 +451,30 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="查找值">
-          <el-input v-model="findReplaceForm.findValue" placeholder="输入要查找的值" />
+        <el-form-item :label="t('rowData.findValue')">
+          <el-input v-model="findReplaceForm.findValue" :placeholder="t('rowData.enterFindValue')" />
         </el-form-item>
-        <el-form-item label="替换为">
-          <el-input v-model="findReplaceForm.replaceValue" placeholder="输入替换后的值" />
+        <el-form-item :label="t('rowData.replaceWith')">
+          <el-input v-model="findReplaceForm.replaceValue" :placeholder="t('rowData.enterReplaceValue')" />
         </el-form-item>
         <el-alert
           type="warning"
           :closable="false"
           show-icon
         >
-          此操作将更新所有符合当前筛选条件的记录中匹配的字段值
+          {{ t('rowData.findReplaceWarning') }}
         </el-alert>
       </el-form>
       <template #footer>
-        <el-button @click="findReplaceDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="doFindReplace">确定</el-button>
+        <el-button @click="findReplaceDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="doFindReplace">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 长文本编辑对话框 -->
     <el-dialog
       v-model="showTextEditDialog"
-      :title="`编辑字段: ${editingColumn?.name || ''}`"
+      :title="t('rowData.editField', { name: editingColumn?.name || '' })"
       width="600px"
       :close-on-click-modal="false"
       @closed="handleDialogClosed"
@@ -482,29 +482,29 @@
       <div class="text-edit-dialog">
         <div class="field-info">
           <el-tag type="info" size="small">{{ editingColumn?.type }}</el-tag>
-          <span class="char-count">{{ editingValue.length }} 字符</span>
+          <span class="char-count">{{ t('rowData.nCharacters', { n: editingValue.length }) }}</span>
         </div>
         <el-input
           ref="textareaRef"
           v-model="editingValue"
           type="textarea"
           :rows="12"
-          :placeholder="`输入 ${editingColumn?.name || ''} 的值`"
+          :placeholder="t('rowData.enterFieldValue', { name: editingColumn?.name || '' })"
           resize="vertical"
         />
         <div class="edit-actions">
           <el-button size="small" @click="setEditingValueNull">
-            设为 NULL
+            {{ t('rowData.setNull') }}
           </el-button>
           <el-button size="small" @click="setEditingValueEmpty">
-            设为空字符串
+            {{ t('rowData.setEmpty') }}
           </el-button>
         </div>
       </div>
       <template #footer>
-        <el-button @click="cancelEdit">取消</el-button>
+        <el-button @click="cancelEdit">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" @click="handleTextEditConfirm">
-          确定
+          {{ t('common.confirm') }}
         </el-button>
       </template>
     </el-dialog>
@@ -514,7 +514,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onActivated, onDeactivated, reactive, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Grid, 
   List, 
@@ -572,29 +573,30 @@ interface OperatorOption {
   label: string
 }
 
-// ==================== 常量 ====================
-
-/** 运算符选项列表 */
-const operatorOptions: OperatorOption[] = [
-  { value: '=', label: '等于 (=)' },
-  { value: '!=', label: '不等于 (!=)' },
-  { value: '<', label: '小于 (<)' },
-  { value: '<=', label: '小于等于 (<=)' },
-  { value: '>', label: '大于 (>)' },
-  { value: '>=', label: '大于等于 (>=)' },
-  { value: 'LIKE', label: '包含 (LIKE)' },
-  { value: 'NOT LIKE', label: '不包含 (NOT LIKE)' },
-  { value: 'IN', label: '在列表中 (IN)' },
-  { value: 'NOT IN', label: '不在列表中 (NOT IN)' },
-  { value: 'IS NULL', label: '为空 (IS NULL)' },
-  { value: 'IS NOT NULL', label: '不为空 (IS NOT NULL)' },
-]
-
 // ==================== 组合式函数 ====================
 
 const route = useRoute()
 const connectionStore = useConnectionStore()
 const { restoreFromUrl, getUrlParams } = useUrlState()
+const { t } = useI18n()
+
+// ==================== 常量 ====================
+
+/** 运算符选项列表 */
+const operatorOptions = computed<OperatorOption[]>(() => [
+  { value: '=', label: t('rowData.equalTo') },
+  { value: '!=', label: t('rowData.notEqualTo') },
+  { value: '<', label: t('rowData.lessThan') },
+  { value: '<=', label: t('rowData.lessOrEqual') },
+  { value: '>', label: t('rowData.greaterThan') },
+  { value: '>=', label: t('rowData.greaterOrEqual') },
+  { value: 'LIKE', label: t('rowData.like') },
+  { value: 'NOT LIKE', label: t('rowData.notLike') },
+  { value: 'IN', label: t('rowData.in') },
+  { value: 'NOT IN', label: t('rowData.notIn') },
+  { value: 'IS NULL', label: t('rowData.isNull') },
+  { value: 'IS NOT NULL', label: t('rowData.isNotNull') },
+])
 
 // ==================== 状态 ====================
 
@@ -615,13 +617,13 @@ const currentTableName = computed(() => {
 
 // 页面标题和描述
 const pageTitle = computed(() => {
-  if (!currentTableName.value) return '表数据'
-  return `表数据: ${currentTableName.value}`
+  if (!currentTableName.value) return t('rowData.title')
+  return t('rowData.titleWithTable', { name: currentTableName.value })
 })
 
 const pageDescription = computed(() => {
-  if (!currentTableName.value) return '请先选择一个表'
-  return `查看和筛选 ${currentTableName.value} 表的数据记录`
+  if (!currentTableName.value) return t('rowData.selectTableFirst')
+  return t('rowData.descWithTable', { name: currentTableName.value })
 })
 
 // 数据加载状态
@@ -761,7 +763,7 @@ function formatCellValue(col: ColumnDef, value: unknown): string {
     return 'NULL'
   }
   if (value === '') {
-    return '(空)'
+    return t('rowData.empty')
   }
   if (typeof value === 'object') {
     return JSON.stringify(value)
@@ -777,12 +779,12 @@ function isNullOperator(operator: string): boolean {
 // 获取值输入框的 placeholder
 function getValuePlaceholder(condition: FilterCondition): string {
   if (condition.operator === 'LIKE' || condition.operator === 'NOT LIKE') {
-    return '输入关键词（自动添加 %）'
+    return t('rowData.enterKeyword')
   }
   if (condition.operator === 'IN' || condition.operator === 'NOT IN') {
-    return '多个值用逗号分隔'
+    return t('rowData.multipleValuesComma')
   }
-  return `输入 ${condition.field || '值'}`
+  return t('rowData.enterFieldValue', { name: condition.field || t('common.field') })
 }
 
 // 判断是否为长文本类型
@@ -815,7 +817,7 @@ function isInlineEditing(row: Record<string, unknown>, columnName: string): bool
 function handleCellDblClick(row: Record<string, unknown>, col: ColumnDef, rowIndex: number) {
   // 主键不允许编辑
   if (col.isPrimary) {
-    ElMessage.warning('主键字段不允许编辑')
+    ElMessage.warning(t('rowData.primaryKeyNotEditable'))
     return
   }
 
@@ -906,7 +908,7 @@ async function applyEdit(row: Record<string, unknown>, col: ColumnDef) {
     
     // 检查是否有主键
     if (Object.keys(primaryKey).length === 0) {
-      ElMessage.error('无法更新：表没有主键')
+      ElMessage.error(t('rowData.cannotUpdateNoPK'))
       cancelEdit()
       return
     }
@@ -919,7 +921,7 @@ async function applyEdit(row: Record<string, unknown>, col: ColumnDef) {
     try {
       // 调用后端 API 更新数据
       if (!connectionStore.currentConnection || !connectionStore.currentDatabase || !currentTableName.value) {
-        ElMessage.error('连接信息不完整')
+        ElMessage.error(t('schema.connectionIncomplete'))
         cancelEdit()
         return
       }
@@ -935,13 +937,13 @@ async function applyEdit(row: Record<string, unknown>, col: ColumnDef) {
       if (affectedRows > 0) {
         // 更新本地行数据
         row[col.name] = newValue === '' ? null : newValue
-        ElMessage.success(`字段 "${col.name}" 已更新`)
+        ElMessage.success(t('rowData.fieldUpdated', { name: col.name }))
       } else {
-        ElMessage.warning('未找到要更新的记录')
+        ElMessage.warning(t('rowData.noRecordFound'))
       }
     } catch (error) {
       console.error('更新数据失败:', error)
-      ElMessage.error('更新数据失败: ' + (error instanceof Error ? error.message : String(error)))
+      ElMessage.error(t('rowData.updateFailed') + ': ' + (error instanceof Error ? error.message : String(error)))
     }
   }
   
@@ -993,7 +995,7 @@ function handleQuickAdd(field: string) {
   if (!exists) {
     addCondition(field)
   } else {
-    ElMessage.warning(`字段 "${field}" 已在筛选条件中`)
+    ElMessage.warning(t('rowData.fieldAlreadyInFilter', { name: field }))
   }
 }
 
@@ -1112,7 +1114,7 @@ async function loadTableData(abortIfStale?: () => boolean) {
   } catch (error) {
     if (abortIfStale?.()) return
     console.error('加载表数据失败:', error)
-    ElMessage.error('加载表数据失败')
+    ElMessage.error(t('rowData.loadFailed'))
     rows.value = []
     columns.value = []
     indexFields.value = []
@@ -1200,7 +1202,7 @@ const exportDialogVisible = ref(false)
 
 async function handleExport() {
   if (!currentTableName.value || rows.value.length === 0) {
-    ElMessage.warning('没有可导出的数据')
+    ElMessage.warning(t('rowData.noDataToExport'))
     return
   }
   exportDialogVisible.value = true
@@ -1238,11 +1240,11 @@ async function doExport(format: 'csv' | 'excel' | 'json' | 'sql') {
         exportToSQL(arrayData, headers, tableName, `${tableName}_${timestamp}.sql`)
         break
     }
-    ElMessage.success('导出成功')
+    ElMessage.success(t('rowData.exportSuccess'))
     exportDialogVisible.value = false
   } catch (error) {
     console.error('导出失败:', error)
-    ElMessage.error('导出失败')
+    ElMessage.error(t('rowData.exportFailed'))
   }
 }
 
@@ -1251,7 +1253,7 @@ const importDialogVisible = ref(false)
 
 function handleImport() {
   if (!currentTableName.value) {
-    ElMessage.warning('请先选择表')
+    ElMessage.warning(t('rowData.selectTableFirst2'))
     return
   }
   importDialogVisible.value = true
@@ -1266,7 +1268,6 @@ function handleImportSuccess() {
 function handleSortChange({ prop, order }: { prop: string; order: string | null }) {
   sortState.prop = prop || ''
   sortState.order = (order || '') as '' | 'ascending' | 'descending'
-  // Mock 数据不支持排序，仅记录状态
   console.log('Sort changed:', sortState)
 }
 
@@ -1287,7 +1288,7 @@ const batchUpdateForm = ref<Record<string, unknown>>({})
 
 async function handleBatchUpdate() {
   if (filterConditions.value.length === 0) {
-    ElMessage.warning('请先设置筛选条件')
+    ElMessage.warning(t('rowData.setFilterFirst'))
     return
   }
   batchUpdateDialogVisible.value = true
@@ -1308,26 +1309,26 @@ async function doBatchUpdate() {
       update_data: batchUpdateForm.value
     } as BatchUpdateRequest)
 
-    ElMessage.success(`批量更新成功，影响 ${result.affected_rows} 行`)
+    ElMessage.success(t('rowData.batchUpdateSuccess', { n: result.affected_rows }))
     batchUpdateDialogVisible.value = false
     batchUpdateForm.value = {}
     await loadTableData()
   } catch (error: any) {
-    ElMessage.error(error.message || '批量更新失败')
+    ElMessage.error(error.message || t('rowData.batchUpdateFailed'))
   }
 }
 
 // 批量删除
 async function handleBatchDelete() {
   if (filterConditions.value.length === 0) {
-    ElMessage.warning('请先设置筛选条件')
+    ElMessage.warning(t('rowData.setFilterFirst'))
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      `确定要删除符合筛选条件的 ${pagination.total} 条记录吗？此操作不可撤销。`,
-      '批量删除确认',
+      t('rowData.batchDeleteConfirm', { n: pagination.total }),
+      t('rowData.batchDeleteConfirmTitle'),
       { type: 'warning' }
     )
 
@@ -1343,11 +1344,11 @@ async function handleBatchDelete() {
       filters
     } as BatchDeleteRequest)
 
-    ElMessage.success(`批量删除成功，删除 ${result.affected_rows} 行`)
+    ElMessage.success(t('rowData.batchDeleteSuccess', { n: result.affected_rows }))
     await loadTableData()
   } catch (error: any) {
     if (error.message !== 'cancel') {
-      ElMessage.error(error.message || '批量删除失败')
+      ElMessage.error(error.message || t('rowData.batchDeleteFailed'))
     }
   }
 }
@@ -1376,12 +1377,12 @@ async function doCompareData() {
   }
 
   if (!compareForm.value.table2) {
-    ElMessage.warning('请选择要对比的表')
+    ElMessage.warning(t('rowData.selectTableToCompare'))
     return
   }
 
   if (compareForm.value.keyColumns.length === 0) {
-    ElMessage.warning('请选择至少一个主键字段')
+    ElMessage.warning(t('rowData.selectAtLeastOneKey'))
     return
   }
 
@@ -1395,13 +1396,11 @@ async function doCompareData() {
       key_columns: compareForm.value.keyColumns
     } as CompareDataRequest)
 
-    ElMessage.success(
-      `对比完成：仅表1有 ${result.only_in_table1.length} 条，仅表2有 ${result.only_in_table2.length} 条，不同 ${result.different.length} 条，相同 ${result.same_count} 条`
-    )
+    ElMessage.success(t('rowData.compareComplete'))
     // TODO: 显示对比结果详情
     compareDialogVisible.value = false
   } catch (error: any) {
-    ElMessage.error(error.message || '数据对比失败')
+    ElMessage.error(error.message || t('rowData.compareFailed'))
   }
 }
 
@@ -1415,7 +1414,7 @@ const findReplaceForm = ref({
 
 function handleFindReplace() {
   if (!currentTableName.value) {
-    ElMessage.warning('请先选择表')
+    ElMessage.warning(t('rowData.selectTableFirst2'))
     return
   }
   findReplaceForm.value.column = ''
@@ -1430,12 +1429,12 @@ async function doFindReplace() {
   }
 
   if (!findReplaceForm.value.column) {
-    ElMessage.warning('请选择要查找替换的字段')
+    ElMessage.warning(t('rowData.selectFieldToSearch'))
     return
   }
 
   if (!findReplaceForm.value.findValue) {
-    ElMessage.warning('请输入查找值')
+    ElMessage.warning(t('rowData.enterSearchValue'))
     return
   }
 
@@ -1450,11 +1449,11 @@ async function doFindReplace() {
       filters: buildFilterArray()
     } as FindReplaceRequest)
 
-    ElMessage.success(`查找替换完成：匹配 ${result.matched_rows} 行，更新 ${result.affected_rows} 行`)
+    ElMessage.success(t('rowData.findReplaceComplete', { matched: result.matched_rows, affected: result.affected_rows }))
     findReplaceDialogVisible.value = false
     await loadTableData()
   } catch (error: any) {
-    ElMessage.error(error.message || '查找替换失败')
+    ElMessage.error(error.message || t('rowData.findReplaceFailed'))
   }
 }
 

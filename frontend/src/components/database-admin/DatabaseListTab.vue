@@ -19,7 +19,7 @@
             <span class="db-name">{{ db }}</span>
             <span class="db-status" v-if="currentDatabase === db">
               <el-icon :size="12"><Select /></el-icon>
-              当前选中
+              {{ t('dbAdmin.currentSelected') }}
             </span>
           </div>
           <div class="card-actions">
@@ -28,14 +28,14 @@
               size="small"
               @click.stop="handleOpenQuery(db)"
             >
-              查询
+              {{ t('nav.query') }}
             </el-button>
           </div>
         </div>
         
         <!-- 空状态 -->
         <div class="empty-databases" v-if="!loadingDatabases && databases.length === 0">
-          <el-empty description="该连接下没有可用的数据库" />
+          <el-empty :description="t('dbAdmin.noDatabases')" />
         </div>
       </div>
 
@@ -44,41 +44,41 @@
         <div class="tables-section-header">
           <div class="tables-section-left">
             <el-icon :size="18"><Grid /></el-icon>
-            <span class="tables-section-title">当前数据库的表：{{ currentDatabase }}</span>
+            <span class="tables-section-title">{{ t('dbAdmin.tablesOfDb') }}{{ currentDatabase }}</span>
           </div>
           <el-button link type="primary" size="small" class="new-db-entry" @click="handleGoToCreateDatabase">
             <el-icon :size="14"><Plus /></el-icon>
-            新建数据库
+            {{ t('dbAdmin.createDb') }}
           </el-button>
         </div>
         <div class="tables-block" v-loading="loadingTables">
           <template v-if="tables.length > 0">
             <el-table :data="tables" stripe size="small" class="tables-table">
-              <el-table-column prop="name" label="表名" min-width="140" show-overflow-tooltip />
-              <el-table-column prop="rows" label="行数" width="100">
+              <el-table-column prop="name" :label="t('dbAdmin.tableName')" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="rows" :label="t('sidebar.rows')" width="100">
                 <template #default="{ row }">
                   {{ row.rows !== undefined ? formatNumber(row.rows) : '-' }}
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="220" fixed="right">
+              <el-table-column :label="t('common.actions')" width="220" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="handleTableQuery(row.name)">
-                    查询
+                    {{ t('nav.query') }}
                   </el-button>
                   <el-button link type="primary" size="small" @click="handleTableSchema(row.name)">
-                    表结构
+                    {{ t('database.tableSchema') }}
                   </el-button>
                   <el-button link type="primary" size="small" @click="handleTableRowData(row.name)">
-                    表数据
+                    {{ t('database.tableData') }}
                   </el-button>
                 </template>
               </el-table-column>
             </el-table>
           </template>
           <div v-else-if="!loadingTables" class="tables-empty">
-            <el-empty description="该库暂无表">
+            <el-empty :description="t('dbAdmin.noTables')">
               <template #extra>
-                <el-button type="primary" size="small" @click="handleGoToCreateTable">去建表</el-button>
+                <el-button type="primary" size="small" @click="handleGoToCreateTable">{{ t('dbAdmin.goCreateTable') }}</el-button>
               </template>
             </el-empty>
           </div>
@@ -90,15 +90,15 @@
     <div class="connection-info-card">
       <div class="info-header">
         <el-icon :size="20"><Connection /></el-icon>
-        <span class="info-title">连接信息</span>
+        <span class="info-title">{{ t('dbAdmin.connInfo') }}</span>
       </div>
       <div class="info-list">
         <div class="info-item">
-          <span class="info-label">连接名称</span>
+          <span class="info-label">{{ t('dbAdmin.connName') }}</span>
           <span class="info-value">{{ currentConnection?.name }}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">数据库类型</span>
+          <span class="info-label">{{ t('dbAdmin.dbTypeLabel') }}</span>
           <span class="info-value">
             <el-tag size="small" :type="getDbTypeTag(currentConnection?.db_type || '')">
               {{ currentConnection?.db_type }}
@@ -106,15 +106,15 @@
           </span>
         </div>
         <div class="info-item">
-          <span class="info-label">主机地址</span>
+          <span class="info-label">{{ t('dbAdmin.hostAddress') }}</span>
           <span class="info-value code">{{ currentConnection?.db_config?.host }}:{{ currentConnection?.db_config?.port }}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">数据库数量</span>
-          <span class="info-value">{{ databases.length }} 个</span>
+          <span class="info-label">{{ t('dbAdmin.dbCount') }}</span>
+          <span class="info-value">{{ databases.length }} {{ t('dbAdmin.unit') }}</span>
         </div>
         <div class="info-item" v-if="currentDatabase">
-          <span class="info-label">当前数据库</span>
+          <span class="info-label">{{ t('dbAdmin.currentDatabase') }}</span>
           <span class="info-value highlight">{{ currentDatabase }}</span>
         </div>
       </div>
@@ -124,6 +124,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useConnectionStore } from '@/store/connection'
 import { useUrlState } from '@/composables/useUrlState'
@@ -135,6 +136,7 @@ import {
   Select
 } from '@element-plus/icons-vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const connectionStore = useConnectionStore()
 const { updateUrlParams } = useUrlState()

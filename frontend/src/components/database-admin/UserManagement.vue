@@ -4,7 +4,7 @@
     <div class="action-bar">
       <el-button type="primary" @click="handleCreateUser">
         <el-icon><Plus /></el-icon>
-        创建用户
+        {{ t('userAdmin.createUser') }}
       </el-button>
     </div>
     
@@ -16,29 +16,29 @@
       border
       style="width: 100%"
     >
-      <el-table-column prop="username" label="用户名" sortable />
+      <el-table-column prop="username" :label="t('auth.username')" sortable />
       <el-table-column 
         :prop="dbType === 'mysql' ? 'host' : 'role'" 
-        :label="dbType === 'mysql' ? '主机' : '角色'"
+        :label="dbType === 'mysql' ? t('userAdmin.hostCol') : t('userAdmin.roleCol')"
         v-if="dbType === 'mysql'"
       />
-      <el-table-column prop="role" label="角色" v-if="dbType === 'postgresql'" />
-      <el-table-column prop="privileges" label="权限摘要" :show-overflow-tooltip="true" />
-      <el-table-column prop="created_at" label="创建时间" />
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column prop="role" :label="t('userAdmin.roles')" v-if="dbType === 'postgresql'" />
+      <el-table-column prop="privileges" :label="t('userAdmin.privilegeSummary')" :show-overflow-tooltip="true" />
+      <el-table-column prop="created_at" :label="t('dbAdmin.createdAt')" />
+      <el-table-column :label="t('common.actions')" width="280" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="handleChangePassword(row)">
-            修改密码
+            {{ t('userAdmin.changePassword') }}
           </el-button>
           <el-button size="small" @click="handleViewGrants(row)">
-            查看权限
+            {{ t('userAdmin.viewPermissions') }}
           </el-button>
           <el-button 
             size="small" 
             type="danger" 
             @click="handleDelete(row)"
           >
-            删除
+            {{ t('common.delete') }}
           </el-button>
         </template>
       </el-table-column>
@@ -46,7 +46,7 @@
     
     <!-- 统计信息 -->
     <div class="table-footer">
-      <span>共 {{ userList.length }} 个用户</span>
+      <span>{{ t('userAdmin.totalNUsers', { n: userList.length }) }}</span>
     </div>
     
     <!-- 对话框组件 -->
@@ -72,6 +72,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useConnectionStore } from '@/store/connection'
@@ -81,6 +82,7 @@ import UserCreateDialog from './UserCreateDialog.vue'
 import UserPasswordDialog from './UserPasswordDialog.vue'
 import UserDeleteConfirm from './UserDeleteConfirm.vue'
 
+const { t } = useI18n()
 const connectionStore = useConnectionStore()
 
 const currentConnection = computed(() => connectionStore.currentConnection)
@@ -93,7 +95,6 @@ const showPasswordDialog = ref(false)
 const showDeleteDialog = ref(false)
 const selectedUser = ref<DatabaseUser | null>(null)
 
-// 加载用户列表
 async function loadUserList() {
   if (!currentConnection.value) return
   
@@ -101,48 +102,40 @@ async function loadUserList() {
   try {
     userList.value = await getUserList(currentConnection.value.id)
   } catch (error: any) {
-    ElMessage.error(error.message || '加载用户列表失败')
+    ElMessage.error(error.message || t('userAdmin.loadUsersFailed'))
   } finally {
     loading.value = false
   }
 }
 
-// 创建用户
 function handleCreateUser() {
   showCreateDialog.value = true
 }
 
-// 创建成功
 async function handleCreateSuccess() {
   await loadUserList()
-  ElMessage.success('用户创建成功')
+  ElMessage.success(t('userAdmin.userCreated'))
 }
 
-// 修改密码
 function handleChangePassword(row: DatabaseUser) {
   selectedUser.value = row
   showPasswordDialog.value = true
 }
 
-// 密码修改成功
 async function handlePasswordSuccess() {
   await loadUserList()
-  ElMessage.success('密码修改成功')
+  ElMessage.success(t('userAdmin.passwordChanged'))
 }
 
-// 查看权限
 function handleViewGrants(row: DatabaseUser) {
-  // TODO: 跳转到权限管理Tab并选中该用户
-  ElMessage.info('查看权限功能待实现')
+  ElMessage.info(t('userAdmin.viewPermTodo'))
 }
 
-// 删除
 function handleDelete(row: DatabaseUser) {
   selectedUser.value = row
   showDeleteDialog.value = true
 }
 
-// 确认删除
 async function handleDeleteConfirm() {
   if (!selectedUser.value || !currentConnection.value) return
   
@@ -151,10 +144,10 @@ async function handleDeleteConfirm() {
       username: selectedUser.value.username,
       host: selectedUser.value.host
     })
-    ElMessage.success('用户删除成功')
+    ElMessage.success(t('userAdmin.userDeleted'))
     await loadUserList()
   } catch (error: any) {
-    ElMessage.error(error.message || '删除用户失败')
+    ElMessage.error(error.message || t('userAdmin.deleteUserFailed'))
   } finally {
     showDeleteDialog.value = false
     selectedUser.value = null

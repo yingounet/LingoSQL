@@ -2,10 +2,10 @@
   <div class="table-management">
     <!-- 当前操作库提示 -->
     <div class="current-db-bar" v-if="databaseOptions.length > 0">
-      <span class="current-db-label">当前操作库：</span>
+      <span class="current-db-label">{{ t('dbAdmin.currentDb') }}</span>
       <el-select
         v-model="selectedDatabase"
-        placeholder="选择数据库"
+        :placeholder="t('sidebar.selectDatabase')"
         clearable
         filterable
         class="current-db-select"
@@ -24,7 +24,7 @@
         @click="handleCreateTable"
       >
         <el-icon><Plus /></el-icon>
-        创建表
+        {{ t('dbAdmin.createTable') }}
       </el-button>
     </div>
     <div v-else class="no-db-tip">
@@ -33,13 +33,13 @@
         :closable="false"
         show-icon
       >
-        <template #title>暂无可用数据库</template>
-        请先在「数据库列表」Tab 中选择数据库，或前往「数据库管理」创建数据库。
+        <template #title>{{ t('dbAdmin.noAvailableDatabases') }}</template>
+        {{ t('dbAdmin.selectDbFromList') }}
       </el-alert>
     </div>
 
     <div v-if="databaseOptions.length > 0 && !selectedDatabase" class="select-db-hint">
-      <span>请在上方选择要管理的数据库</span>
+      <span>{{ t('dbAdmin.selectDbAbove') }}</span>
     </div>
 
     <el-table
@@ -50,31 +50,31 @@
       border
       style="width: 100%"
     >
-      <el-table-column prop="name" label="表名" />
-      <el-table-column prop="engine" label="引擎" v-if="dbType === 'mysql'" />
-      <el-table-column prop="rows" label="行数" />
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column prop="name" :label="t('dbAdmin.tableName')" />
+      <el-table-column prop="engine" :label="t('sidebar.engine')" v-if="dbType === 'mysql'" />
+      <el-table-column prop="rows" :label="t('sidebar.rows')" />
+      <el-table-column :label="t('common.actions')" width="120" fixed="right">
         <template #default="{ row }">
           <el-button
             size="small"
             type="danger"
             @click="handleDeleteTable(row)"
           >
-            删除
+            {{ t('common.delete') }}
           </el-button>
         </template>
       </el-table-column>
       <template #empty>
         <div v-if="!loadingTables" class="tables-empty-state">
-          <el-empty description="该数据库下暂无表，可点击上方「创建表」添加">
-            <el-button type="primary" @click="handleCreateTable">创建表</el-button>
+          <el-empty :description="t('dbAdmin.noTablesCreateHint')">
+            <el-button type="primary" @click="handleCreateTable">{{ t('dbAdmin.createTable') }}</el-button>
           </el-empty>
         </div>
       </template>
     </el-table>
 
     <div class="table-footer" v-if="databaseOptions.length > 0 && selectedDatabase">
-      <span>共 {{ tables.length }} 张表</span>
+      <span>{{ t('dbAdmin.totalNTables', { n: tables.length }) }}</span>
     </div>
 
     <CreateTableDialog
@@ -93,6 +93,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useConnectionStore } from '@/store/connection'
@@ -104,6 +105,7 @@ import type { TableInfo } from '@/api/table'
 import CreateTableDialog from './CreateTableDialog.vue'
 import TableDeleteConfirm from './TableDeleteConfirm.vue'
 
+const { t } = useI18n()
 const connectionStore = useConnectionStore()
 const currentConnection = computed(() => connectionStore.currentConnection)
 const dbType = computed(() => currentConnection.value?.db_type || 'mysql')
@@ -143,7 +145,7 @@ async function loadTables() {
     const result = await getTables(currentConnection.value.id, selectedDatabase.value)
     tables.value = Array.isArray(result) ? result : []
   } catch (error: any) {
-    ElMessage.error(error.message || '加载表列表失败，请检查网络或数据库权限')
+    ElMessage.error(error.message || t('dbAdmin.loadTablesFailed'))
     tables.value = []
   } finally {
     loadingTables.value = false
@@ -161,7 +163,7 @@ function handleCreateTable() {
 
 async function handleCreateSuccess() {
   await loadTables()
-  ElMessage.success('表创建成功')
+  ElMessage.success(t('dbAdmin.tableCreated'))
 }
 
 function handleDeleteTable(row: TableInfo) {
@@ -173,10 +175,10 @@ async function handleDeleteConfirm() {
   if (!currentConnection.value || !selectedDatabase.value || !tableToDelete.value) return
   try {
     await dropTable(currentConnection.value.id, selectedDatabase.value, tableToDelete.value)
-    ElMessage.success('表已删除')
+    ElMessage.success(t('dbAdmin.tableDeleted'))
     await loadTables()
   } catch (error: any) {
-    ElMessage.error(error.message || '删除表失败')
+    ElMessage.error(error.message || t('dbAdmin.deleteTableFailed'))
   } finally {
     showDeleteDialog.value = false
     tableToDelete.value = ''

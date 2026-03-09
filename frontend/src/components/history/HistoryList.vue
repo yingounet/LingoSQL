@@ -7,10 +7,10 @@
         :data="data"
         stripe
         style="width: 100%"
-        empty-text="暂无历史记录"
+        :empty-text="t('historyList.noHistory')"
       >
         <!-- SQL 语句 -->
-        <el-table-column prop="sql_query" label="SQL 语句" min-width="300">
+        <el-table-column prop="sql_query" :label="t('historyList.sqlStatement')" min-width="300">
           <template #default="{ row }">
             <div class="sql-cell">
               <code class="sql-code">{{ row.sql_query }}</code>
@@ -22,7 +22,7 @@
                 class="copy-btn"
               >
                 <el-icon><CopyDocument /></el-icon>
-                复制
+                {{ t('historyList.copySql') }}
               </el-button>
             </div>
           </template>
@@ -32,7 +32,7 @@
         <el-table-column
           v-if="type === 'system'"
           prop="operation_type"
-          label="操作类型"
+          :label="t('historyList.operationType')"
           width="150"
         >
           <template #default="{ row }">
@@ -43,24 +43,24 @@
         </el-table-column>
 
         <!-- 执行时间 -->
-        <el-table-column prop="execution_time_ms" label="执行时间" width="120">
+        <el-table-column prop="execution_time_ms" :label="t('historyList.executionTime')" width="120">
           <template #default="{ row }">
             <span>{{ row.execution_time_ms }} ms</span>
           </template>
         </el-table-column>
 
         <!-- 受影响行数 -->
-        <el-table-column prop="rows_affected" label="受影响行数" width="120">
+        <el-table-column prop="rows_affected" :label="t('historyList.affectedRows')" width="120">
           <template #default="{ row }">
             <span>{{ row.rows_affected }}</span>
           </template>
         </el-table-column>
 
         <!-- 状态 -->
-        <el-table-column prop="success" label="状态" width="100">
+        <el-table-column prop="success" :label="t('historyList.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.success ? 'success' : 'danger'" size="small">
-              {{ row.success ? '成功' : '失败' }}
+              {{ row.success ? t('historyList.statusSuccess') : t('historyList.statusFailed') }}
             </el-tag>
           </template>
         </el-table-column>
@@ -69,7 +69,7 @@
         <el-table-column
           v-if="hasError"
           prop="error_message"
-          label="错误信息"
+          :label="t('historyList.errorMessage')"
           min-width="200"
           show-overflow-tooltip
         >
@@ -82,7 +82,7 @@
         </el-table-column>
 
         <!-- 创建时间 -->
-        <el-table-column prop="created_at" label="创建时间" width="180">
+        <el-table-column prop="created_at" :label="t('historyList.createdAt')" width="180">
           <template #default="{ row }">
             <span>{{ formatDateTime(row.created_at) }}</span>
           </template>
@@ -107,6 +107,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { CopyDocument } from '@element-plus/icons-vue'
 import type { QueryHistory } from '@/types/history'
@@ -122,6 +123,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 
 const emit = defineEmits<{
   pageChange: [page: number]
@@ -135,19 +137,19 @@ const hasError = computed(() => {
   return props.data.some(item => !item.success)
 })
 
-// 格式化操作类型
+const operationTypeMap = computed<Record<string, string>>(() => ({
+  GET_DATABASES: t('historyList.opGetDatabases'),
+  GET_TABLES: t('historyList.opGetTables'),
+  GET_TABLE_ROWS: t('historyList.opGetTableData'),
+  GET_TABLE_COLUMNS: t('historyList.opGetTableSchema'),
+  GET_TABLE_INDEXES: t('historyList.opGetTableIndexes'),
+  UPDATE_TABLE_ROW: t('historyList.opUpdateTableData'),
+  USE_DATABASE: t('historyList.opSwitchDatabase'),
+}))
+
 function formatOperationType(type?: string): string {
   if (!type) return '-'
-  const typeMap: Record<string, string> = {
-    GET_DATABASES: '获取数据库',
-    GET_TABLES: '获取表列表',
-    GET_TABLE_ROWS: '获取表数据',
-    GET_TABLE_COLUMNS: '获取表结构',
-    GET_TABLE_INDEXES: '获取表索引',
-    UPDATE_TABLE_ROW: '更新表数据',
-    USE_DATABASE: '切换数据库',
-  }
-  return typeMap[type] || type
+  return operationTypeMap.value[type] || type
 }
 
 // 格式化日期时间
@@ -166,9 +168,9 @@ function formatDateTime(dateStr: string): string {
 // 复制 SQL
 function handleCopySQL(sql: string) {
   navigator.clipboard.writeText(sql).then(() => {
-    ElMessage.success('已复制到剪贴板')
+    ElMessage.success(t('historyList.copiedToClipboard'))
   }).catch(() => {
-    ElMessage.error('复制失败')
+    ElMessage.error(t('historyList.copyFailed'))
   })
 }
 

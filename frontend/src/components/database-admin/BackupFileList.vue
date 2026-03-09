@@ -6,38 +6,41 @@
     border
     style="width: 100%"
   >
-    <el-table-column prop="name" label="备份名称" min-width="200" show-overflow-tooltip />
-    <el-table-column prop="database" label="数据库" width="140" />
-    <el-table-column label="大小" width="120">
+    <el-table-column prop="name" :label="t('backup.backupName')" min-width="200" show-overflow-tooltip />
+    <el-table-column prop="database" :label="t('backup.backupDatabase')" width="140" />
+    <el-table-column :label="t('dbAdmin.sizeLabel')" width="120">
       <template #default="{ row }">
         {{ formatSize(row.size) }}
       </template>
     </el-table-column>
-    <el-table-column prop="file_count" label="文件数" width="90" />
-    <el-table-column prop="created_at" label="创建时间" width="180" />
-    <el-table-column label="操作" width="180" fixed="right">
+    <el-table-column prop="file_count" :label="t('backup.fileCount')" width="90" />
+    <el-table-column prop="created_at" :label="t('dbAdmin.createdAt')" width="180" />
+    <el-table-column :label="t('common.actions')" width="180" fixed="right">
       <template #default="{ row }">
         <el-button size="small" type="primary" link @click="handleDownload(row)">
-          下载
+          {{ t('backup.download') }}
         </el-button>
         <el-button size="small" type="primary" link @click="handleRestore(row)">
-          恢复
+          {{ t('backup.restore') }}
         </el-button>
         <el-button size="small" type="danger" link @click="handleDelete(row)">
-          删除
+          {{ t('common.delete') }}
         </el-button>
       </template>
     </el-table-column>
     <template #empty>
-      <el-empty v-if="!loading" description="暂无备份文件，备份接口实现后将显示列表" />
+      <el-empty v-if="!loading" :description="t('backup.noBackupFiles')" />
     </template>
   </el-table>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { listBackups, deleteBackup, getBackupDownloadUrl, type BackupFileInfo } from '@/api/backup'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   connectionId?: number
@@ -83,10 +86,10 @@ function handleRestore(row: BackupFileInfo) {
 async function handleDelete(row: BackupFileInfo) {
   try {
     await deleteBackup(row.id)
-    ElMessage.success('已删除')
+    ElMessage.success(t('backup.deleted'))
     await loadBackups()
   } catch (e: any) {
-    ElMessage.error(e?.message || '删除失败')
+    ElMessage.error(e?.message || t('backup.deleteFailed'))
   }
 }
 

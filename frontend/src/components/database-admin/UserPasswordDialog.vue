@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="修改密码"
+    :title="t('userAdmin.changePasswordTitle')"
     width="500px"
     @close="handleClose"
   >
@@ -11,40 +11,40 @@
       :rules="rules"
       label-width="100px"
     >
-      <el-form-item label="用户名">
+      <el-form-item :label="t('auth.username')">
         <el-input :value="user?.username" disabled />
       </el-form-item>
       
       <el-form-item 
         v-if="dbType === 'mysql'" 
-        label="主机"
+        :label="t('userAdmin.hostCol')"
       >
         <el-input :value="user?.host || 'localhost'" disabled />
       </el-form-item>
       
-      <el-form-item label="新密码" prop="newPassword">
+      <el-form-item :label="t('userAdmin.newPassword')" prop="newPassword">
         <el-input
           v-model="form.newPassword"
           type="password"
-          placeholder="请输入新密码"
+          :placeholder="t('userAdmin.enterNewPassword')"
           show-password
         />
       </el-form-item>
       
-      <el-form-item label="确认密码" prop="confirmPassword">
+      <el-form-item :label="t('userAdmin.confirmNewPassword')" prop="confirmPassword">
         <el-input
           v-model="form.confirmPassword"
           type="password"
-          placeholder="请再次输入新密码"
+          :placeholder="t('userAdmin.reenterNewPassword')"
           show-password
         />
       </el-form-item>
     </el-form>
     
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
       <el-button type="primary" @click="handleSubmit" :loading="loading">
-        确认修改
+        {{ t('userAdmin.confirmChange') }}
       </el-button>
     </template>
   </el-dialog>
@@ -52,10 +52,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { changeUserPassword } from '@/api/userAdmin'
 import { useConnectionStore } from '@/store/connection'
 import type { DatabaseUser } from '@/types/userAdmin'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -79,22 +82,22 @@ const form = reactive({
 
 const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
   if (value !== form.newPassword) {
-    callback(new Error('两次输入的密码不一致'))
+    callback(new Error(t('userAdmin.passwordMismatch')))
   } else {
     callback()
   }
 }
 
-const rules: FormRules = {
+const rules = computed<FormRules>(() => ({
   newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+    { required: true, message: t('userAdmin.newPasswordReq'), trigger: 'blur' },
+    { min: 6, message: t('userAdmin.passwordMinLength'), trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
+    { required: true, message: t('userAdmin.confirmPasswordReq'), trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
   ]
-}
+}))
 
 const visible = computed({
   get: () => props.modelValue,
@@ -115,7 +118,7 @@ async function handleSubmit() {
     if (!valid) return
     
     if (!connectionStore.currentConnection) {
-      ElMessage.error('请先选择连接')
+      ElMessage.error(t('dbAdmin.selectConnectionFirst'))
       return
     }
     
@@ -126,11 +129,11 @@ async function handleSubmit() {
         host: props.user.host,
         new_password: form.newPassword
       })
-      ElMessage.success('密码修改成功')
+      ElMessage.success(t('userAdmin.changePasswordSuccess'))
       emit('success')
       handleClose()
     } catch (error: any) {
-      ElMessage.error(error.message || '修改密码失败')
+      ElMessage.error(error.message || t('userAdmin.changePasswordFailed'))
     } finally {
       loading.value = false
     }

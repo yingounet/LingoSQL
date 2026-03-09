@@ -2,13 +2,13 @@
   <div class="schema-page">
     <!-- 页面标题 -->
     <PageHeader 
-      title="Table Schema" 
+      :title="t('schema.title')" 
       :description="pageDescription"
     />
 
     <!-- 未选择表时的提示 -->
     <div v-if="!currentTableName" class="empty-state">
-      <el-empty description="请从左侧选择一个表查看结构">
+      <el-empty :description="t('schema.selectTableHint')">
         <template #image>
           <el-icon :size="64" class="empty-icon"><Grid /></el-icon>
         </template>
@@ -23,12 +23,12 @@
           <div class="card-header">
             <span class="card-title">
               <el-icon><List /></el-icon>
-              字段结构
+              {{ t('schema.columnStructure') }}
               <el-tag size="small" type="info" class="db-type-tag">{{ dbTypeLabel }}</el-tag>
             </span>
             <el-button type="primary" size="small" @click="handleAddColumn">
               <el-icon><Plus /></el-icon>
-              新增字段
+              {{ t('schema.addColumn') }}
             </el-button>
           </div>
         </template>
@@ -41,7 +41,7 @@
           class="schema-table"
         >
           <!-- 字段名 -->
-          <el-table-column prop="name" label="字段名" min-width="120" fixed="left">
+          <el-table-column prop="name" :label="t('schema.columnName')" min-width="120" fixed="left">
             <template #default="{ row }">
               <span class="column-name">
                 <el-icon v-if="row.is_primary" class="key-icon"><Key /></el-icon>
@@ -51,7 +51,7 @@
           </el-table-column>
 
           <!-- 类型 -->
-          <el-table-column prop="type" label="类型" width="150">
+          <el-table-column prop="type" :label="t('common.type')" width="150">
             <template #default="{ row }">
               <el-tag size="small" type="info">
                 {{ formatColumnType(row) }}
@@ -60,7 +60,7 @@
           </el-table-column>
 
           <!-- 可空 -->
-          <el-table-column prop="nullable" label="可空" width="80" align="center">
+          <el-table-column prop="nullable" :label="t('schema.nullable')" width="80" align="center">
             <template #default="{ row }">
               <el-tag :type="row.nullable ? 'success' : 'danger'" size="small">
                 {{ row.nullable ? 'YES' : 'NO' }}
@@ -69,14 +69,14 @@
           </el-table-column>
 
           <!-- 默认值 -->
-          <el-table-column prop="default_value" label="默认值" width="140">
+          <el-table-column prop="default_value" :label="t('schema.defaultValue')" width="140">
             <template #default="{ row }">
               <span class="default-value">{{ row.default_value ?? 'NULL' }}</span>
             </template>
           </el-table-column>
 
           <!-- 主键 -->
-          <el-table-column prop="is_primary" label="主键" width="70" align="center">
+          <el-table-column prop="is_primary" :label="t('schema.primaryKey')" width="70" align="center">
             <template #default="{ row }">
               <el-icon v-if="row.is_primary" class="check-icon"><Check /></el-icon>
               <span v-else class="dash">-</span>
@@ -87,7 +87,7 @@
           <el-table-column 
             v-if="dbType !== 'postgresql'" 
             prop="unsigned" 
-            label="无符号" 
+            :label="t('schema.unsigned')" 
             width="80" 
             align="center"
           >
@@ -101,7 +101,7 @@
           <el-table-column 
             v-if="dbType !== 'postgresql'" 
             prop="auto_increment" 
-            label="自增" 
+            :label="t('schema.autoIncrement')" 
             width="70" 
             align="center"
           >
@@ -115,7 +115,7 @@
           <el-table-column 
             v-if="dbType === 'postgresql'" 
             prop="identity" 
-            label="标识列" 
+            :label="t('schema.identity')" 
             width="100" 
             align="center"
           >
@@ -131,7 +131,7 @@
           <el-table-column 
             v-if="dbType === 'postgresql'" 
             prop="is_array" 
-            label="数组" 
+            :label="t('schema.isArray')" 
             width="70" 
             align="center"
           >
@@ -142,20 +142,20 @@
           </el-table-column>
 
           <!-- 注释 -->
-          <el-table-column prop="comment" label="注释" min-width="150">
+          <el-table-column prop="comment" :label="t('sidebar.comment')" min-width="150">
             <template #default="{ row }">
               <span class="comment-text">{{ row.comment || '-' }}</span>
             </template>
           </el-table-column>
 
           <!-- 操作 -->
-          <el-table-column label="操作" width="120" fixed="right">
+          <el-table-column :label="t('common.actions')" width="120" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" link size="small" @click="handleEditColumn(row)">
-                编辑
+                {{ t('common.edit') }}
               </el-button>
               <el-button type="danger" link size="small" @click="handleDeleteColumn(row)">
-                删除
+                {{ t('common.delete') }}
               </el-button>
             </template>
           </el-table-column>
@@ -168,11 +168,11 @@
           <div class="card-header">
             <span class="card-title">
               <el-icon><Connection /></el-icon>
-              索引信息
+              {{ t('schema.indexInfo') }}
             </span>
             <el-button type="primary" size="small" @click="handleAddIndex">
               <el-icon><Plus /></el-icon>
-              新增索引
+              {{ t('schema.addIndex') }}
             </el-button>
           </div>
         </template>
@@ -184,7 +184,7 @@
           border
           class="schema-table"
         >
-          <el-table-column prop="name" label="索引名" min-width="150">
+          <el-table-column prop="name" :label="t('schema.indexName')" min-width="150">
             <template #default="{ row }">
               <span class="index-name">
                 <el-icon v-if="row.type === 'PRIMARY'" class="key-icon"><Key /></el-icon>
@@ -193,7 +193,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="type" label="类型" width="120">
+          <el-table-column prop="type" :label="t('common.type')" width="120">
             <template #default="{ row }">
               <el-tag 
                 size="small" 
@@ -204,13 +204,13 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="method" label="方法" width="100">
+          <el-table-column prop="method" :label="t('common.method')" width="100">
             <template #default="{ row }">
               <span class="index-method">{{ row.method || '-' }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column prop="columns" label="字段" min-width="200">
+          <el-table-column prop="columns" :label="t('common.columns')" min-width="200">
             <template #default="{ row }">
               <div class="index-columns">
                 <el-tag 
@@ -240,19 +240,19 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="cardinality" label="基数" width="100" align="right">
+          <el-table-column prop="cardinality" :label="t('schema.cardinality')" width="100" align="right">
             <template #default="{ row }">
               <span class="cardinality">{{ row.cardinality ?? '-' }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column prop="comment" label="注释" min-width="150">
+          <el-table-column prop="comment" :label="t('sidebar.comment')" min-width="150">
             <template #default="{ row }">
               <span class="comment-text">{{ row.comment || '-' }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="120" fixed="right">
+          <el-table-column :label="t('common.actions')" width="120" fixed="right">
             <template #default="{ row }">
               <el-button 
                 type="primary" 
@@ -261,7 +261,7 @@
                 @click="handleEditIndex(row)"
                 :disabled="row.type === 'PRIMARY'"
               >
-                编辑
+                {{ t('common.edit') }}
               </el-button>
               <el-button 
                 type="danger" 
@@ -270,7 +270,7 @@
                 @click="handleDeleteIndex(row)"
                 :disabled="row.type === 'PRIMARY'"
               >
-                删除
+                {{ t('common.delete') }}
               </el-button>
             </template>
           </el-table-column>
@@ -283,16 +283,16 @@
           <div class="card-header">
             <span class="card-title">
               <el-icon><Document /></el-icon>
-              建表语句
+              {{ t('schema.createTableDDL') }}
             </span>
             <el-button-group>
               <el-button type="primary" size="small" @click="copyDDL">
                 <el-icon><CopyDocument /></el-icon>
-                复制
+                {{ t('common.copy') }}
               </el-button>
               <el-button size="small" @click="handleRenameTable" v-if="currentTableName">
                 <el-icon><Edit /></el-icon>
-                重命名表
+                {{ t('schema.renameTable') }}
               </el-button>
             </el-button-group>
           </div>
@@ -304,7 +304,7 @@
     <!-- 字段编辑对话框 -->
     <el-dialog
       v-model="columnDialogVisible"
-      :title="editingColumn ? '编辑字段' : '新增字段'"
+      :title="editingColumn ? t('schema.editColumn') : t('schema.addColumnTitle')"
       width="700px"
       destroy-on-close
     >
@@ -315,16 +315,16 @@
         label-width="100px"
       >
         <!-- 字段名 -->
-        <el-form-item label="字段名" prop="name">
-          <el-input v-model="columnForm.name" placeholder="请输入字段名" />
+        <el-form-item :label="t('schema.columnName')" prop="name">
+          <el-input v-model="columnForm.name" :placeholder="t('schema.enterColumnName')" />
         </el-form-item>
 
         <!-- 类型 -->
-        <el-form-item label="类型" prop="type">
+        <el-form-item :label="t('common.type')" prop="type">
           <div class="type-row">
             <el-select 
               v-model="columnForm.type" 
-              placeholder="请选择字段类型" 
+              :placeholder="t('schema.selectColumnType')" 
               style="width: 200px;"
               filterable
               @change="handleTypeChange"
@@ -349,7 +349,7 @@
               v-model="columnForm.length" 
               :min="1" 
               :max="65535"
-              placeholder="长度"
+              :placeholder="t('schema.length')"
               style="width: 120px; margin-left: 10px;"
             />
             
@@ -359,7 +359,7 @@
                 v-model="columnForm.precision" 
                 :min="1" 
                 :max="65"
-                placeholder="精度"
+                :placeholder="t('schema.precision')"
                 style="width: 100px; margin-left: 10px;"
               />
               <span style="margin: 0 5px;">,</span>
@@ -367,7 +367,7 @@
                 v-model="columnForm.scale" 
                 :min="0" 
                 :max="30"
-                placeholder="小数位"
+                :placeholder="t('schema.scale')"
                 style="width: 100px;"
               />
             </template>
@@ -375,40 +375,40 @@
         </el-form-item>
 
         <!-- 可空 -->
-        <el-form-item label="可空">
+        <el-form-item :label="t('schema.nullable')">
           <el-switch v-model="columnForm.nullable" />
         </el-form-item>
 
         <!-- 默认值 -->
-        <el-form-item label="默认值">
-          <el-input v-model="columnForm.default_value" placeholder="请输入默认值" />
+        <el-form-item :label="t('schema.defaultValue')">
+          <el-input v-model="columnForm.default_value" :placeholder="t('schema.enterDefaultValue')" />
         </el-form-item>
 
         <!-- 主键 -->
-        <el-form-item label="主键">
+        <el-form-item :label="t('schema.primaryKey')">
           <el-switch v-model="columnForm.is_primary" />
         </el-form-item>
 
         <!-- MySQL/MariaDB 特有属性 -->
         <template v-if="dbType !== 'postgresql'">
           <!-- 无符号 -->
-          <el-form-item label="无符号" v-if="isNumericType(columnForm.type)">
+          <el-form-item :label="t('schema.unsigned')" v-if="isNumericType(columnForm.type)">
             <el-switch v-model="columnForm.unsigned" />
           </el-form-item>
 
           <!-- 填充零 -->
-          <el-form-item label="填充零" v-if="isNumericType(columnForm.type)">
+          <el-form-item :label="t('schema.zerofill')" v-if="isNumericType(columnForm.type)">
             <el-switch v-model="columnForm.zerofill" />
           </el-form-item>
 
           <!-- 自增 -->
-          <el-form-item label="自增" v-if="isIntegerType(columnForm.type)">
+          <el-form-item :label="t('schema.autoIncrement')" v-if="isIntegerType(columnForm.type)">
             <el-switch v-model="columnForm.auto_increment" />
           </el-form-item>
 
           <!-- 字符集 -->
-          <el-form-item label="字符集" v-if="isStringType(columnForm.type)">
-            <el-select v-model="columnForm.charset" placeholder="选择字符集" clearable style="width: 200px;">
+          <el-form-item :label="t('sidebar.charset')" v-if="isStringType(columnForm.type)">
+            <el-select v-model="columnForm.charset" :placeholder="t('schema.selectCharset')" clearable style="width: 200px;">
               <el-option 
                 v-for="cs in schemaConfig.charsets" 
                 :key="cs.value" 
@@ -419,8 +419,8 @@
           </el-form-item>
 
           <!-- 排序规则 -->
-          <el-form-item label="排序规则" v-if="isStringType(columnForm.type)">
-            <el-select v-model="columnForm.collation" placeholder="选择排序规则" clearable style="width: 200px;">
+          <el-form-item :label="t('schema.collation')" v-if="isStringType(columnForm.type)">
+            <el-select v-model="columnForm.collation" :placeholder="t('schema.selectCollation')" clearable style="width: 200px;">
               <el-option 
                 v-for="col in schemaConfig.collations" 
                 :key="col.value" 
@@ -431,9 +431,9 @@
           </el-form-item>
 
           <!-- 更新时 -->
-          <el-form-item label="更新时" v-if="isDateTimeType(columnForm.type)">
-            <el-select v-model="columnForm.on_update" placeholder="选择更新时行为" clearable style="width: 200px;">
-              <el-option label="无" value="" />
+          <el-form-item :label="t('schema.onUpdate')" v-if="isDateTimeType(columnForm.type)">
+            <el-select v-model="columnForm.on_update" :placeholder="t('schema.selectOnUpdate')" clearable style="width: 200px;">
+              <el-option :label="t('schema.none')" value="" />
               <el-option label="CURRENT_TIMESTAMP" value="CURRENT_TIMESTAMP" />
             </el-select>
           </el-form-item>
@@ -442,30 +442,30 @@
         <!-- PostgreSQL 特有属性 -->
         <template v-if="dbType === 'postgresql'">
           <!-- 标识列 -->
-          <el-form-item label="标识列" v-if="isIntegerType(columnForm.type)">
-            <el-select v-model="columnForm.identity" placeholder="选择标识类型" clearable style="width: 200px;">
-              <el-option label="无" value="" />
+          <el-form-item :label="t('schema.identity')" v-if="isIntegerType(columnForm.type)">
+            <el-select v-model="columnForm.identity" :placeholder="t('schema.selectIdentityType')" clearable style="width: 200px;">
+              <el-option :label="t('schema.none')" value="" />
               <el-option label="GENERATED ALWAYS" value="ALWAYS" />
               <el-option label="GENERATED BY DEFAULT" value="BY DEFAULT" />
             </el-select>
           </el-form-item>
 
           <!-- 数组 -->
-          <el-form-item label="数组">
+          <el-form-item :label="t('schema.isArray')">
             <el-switch v-model="columnForm.is_array" />
             <el-input-number 
               v-if="columnForm.is_array"
               v-model="columnForm.dimension" 
               :min="1" 
               :max="6"
-              placeholder="维度"
+              :placeholder="t('schema.dimension')"
               style="width: 100px; margin-left: 10px;"
             />
           </el-form-item>
 
           <!-- 排序规则 -->
-          <el-form-item label="排序规则" v-if="isStringType(columnForm.type)">
-            <el-select v-model="columnForm.collation" placeholder="选择排序规则" clearable style="width: 200px;">
+          <el-form-item :label="t('schema.collation')" v-if="isStringType(columnForm.type)">
+            <el-select v-model="columnForm.collation" :placeholder="t('schema.selectCollation')" clearable style="width: 200px;">
               <el-option 
                 v-for="col in schemaConfig.collations" 
                 :key="col.value" 
@@ -477,20 +477,20 @@
         </template>
 
         <!-- 注释 -->
-        <el-form-item label="注释">
-          <el-input v-model="columnForm.comment" type="textarea" :rows="2" placeholder="请输入注释" />
+        <el-form-item :label="t('sidebar.comment')">
+          <el-input v-model="columnForm.comment" type="textarea" :rows="2" :placeholder="t('schema.enterComment')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="columnDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveColumn">保存</el-button>
+        <el-button @click="columnDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSaveColumn">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 索引编辑对话框 -->
     <el-dialog
       v-model="indexDialogVisible"
-      :title="editingIndex ? '编辑索引' : '新增索引'"
+      :title="editingIndex ? t('schema.editIndex') : t('schema.addIndexTitle')"
       width="600px"
       destroy-on-close
     >
@@ -501,13 +501,13 @@
         label-width="100px"
       >
         <!-- 索引名 -->
-        <el-form-item label="索引名" prop="name">
-          <el-input v-model="indexForm.name" placeholder="请输入索引名" />
+        <el-form-item :label="t('schema.indexName')" prop="name">
+          <el-input v-model="indexForm.name" :placeholder="t('schema.enterIndexName')" />
         </el-form-item>
 
         <!-- 类型 -->
-        <el-form-item label="类型" prop="type">
-          <el-select v-model="indexForm.type" placeholder="请选择索引类型">
+        <el-form-item :label="t('common.type')" prop="type">
+          <el-select v-model="indexForm.type" :placeholder="t('schema.selectIndexType')">
             <el-option 
               v-for="type in schemaConfig.indexTypes.filter(t => t.value !== 'PRIMARY')" 
               :key="type.value" 
@@ -518,8 +518,8 @@
         </el-form-item>
 
         <!-- 索引方法 -->
-        <el-form-item label="索引方法" v-if="schemaConfig.indexMethods">
-          <el-select v-model="indexForm.method" placeholder="请选择索引方法">
+        <el-form-item :label="t('schema.indexMethod')" v-if="schemaConfig.indexMethods">
+          <el-select v-model="indexForm.method" :placeholder="t('schema.selectIndexMethod')">
             <el-option 
               v-for="method in schemaConfig.indexMethods" 
               :key="method.value" 
@@ -530,11 +530,11 @@
         </el-form-item>
 
         <!-- 字段 -->
-        <el-form-item label="字段" prop="columns">
+        <el-form-item :label="t('common.columns')" prop="columns">
           <el-select 
             v-model="indexForm.columns" 
             multiple 
-            placeholder="请选择字段"
+            :placeholder="t('schema.selectColumns')"
             style="width: 100%;"
           >
             <el-option 
@@ -547,28 +547,28 @@
         </el-form-item>
 
         <!-- PostgreSQL: WHERE 条件 -->
-        <el-form-item label="WHERE 条件" v-if="dbType === 'postgresql'">
+        <el-form-item :label="t('schema.whereCondition')" v-if="dbType === 'postgresql'">
           <el-input 
             v-model="indexForm.where_clause" 
-            placeholder="例如: status = 1"
+            :placeholder="t('schema.whereExample')"
           />
-          <div class="form-tip">用于创建部分索引（Partial Index）</div>
+          <div class="form-tip">{{ t('schema.partialIndexTip') }}</div>
         </el-form-item>
 
         <!-- PostgreSQL: NULLS NOT DISTINCT -->
         <el-form-item label="NULLS NOT DISTINCT" v-if="dbType === 'postgresql' && indexForm.type === 'UNIQUE'">
           <el-switch v-model="indexForm.nulls_not_distinct" />
-          <div class="form-tip">PostgreSQL 15+ 支持，将 NULL 视为相等</div>
+          <div class="form-tip">{{ t('schema.nullsNotDistinctTip') }}</div>
         </el-form-item>
 
         <!-- 注释 -->
-        <el-form-item label="注释">
-          <el-input v-model="indexForm.comment" type="textarea" :rows="2" placeholder="请输入注释" />
+        <el-form-item :label="t('sidebar.comment')">
+          <el-input v-model="indexForm.comment" type="textarea" :rows="2" :placeholder="t('schema.enterComment')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="indexDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveIndex">保存</el-button>
+        <el-button @click="indexDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSaveIndex">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -577,6 +577,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onActivated, onDeactivated } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Grid, List, Plus, Key, Check, Connection, Document, CopyDocument, Edit } from '@element-plus/icons-vue'
 import PageHeader from '@/components/layout/PageHeader.vue'
@@ -607,6 +608,7 @@ const route = useRoute()
 const router = useRouter()
 const connectionStore = useConnectionStore()
 const { restoreFromUrl, getUrlParams } = useUrlState()
+const { t } = useI18n()
 
 // 是否已完成初始化（包括从 URL 恢复状态）
 const initialized = ref(false)
@@ -634,9 +636,9 @@ const currentTableName = computed(() => {
 // 页面描述
 const pageDescription = computed(() => {
   if (!currentTableName.value) {
-    return '请先选择一个表'
+    return t('schema.selectTableFirst')
   }
-  return `表结构: ${currentTableName.value}`
+  return t('schema.tableStructure', { name: currentTableName.value })
 })
 
 // 字段数据
@@ -653,10 +655,10 @@ const editingColumn = ref<ColumnInfo | null>(null)
 const columnFormRef = ref<FormInstance>()
 const columnForm = ref<ColumnInfo>(createEmptyColumn(dbType.value))
 
-const columnRules: FormRules = {
-  name: [{ required: true, message: '请输入字段名', trigger: 'blur' }],
-  type: [{ required: true, message: '请选择字段类型', trigger: 'change' }],
-}
+const columnRules = computed<FormRules>(() => ({
+  name: [{ required: true, message: t('schema.enterFieldName'), trigger: 'blur' }],
+  type: [{ required: true, message: t('schema.selectFieldType'), trigger: 'change' }],
+}))
 
 // 索引编辑对话框
 const indexDialogVisible = ref(false)
@@ -664,11 +666,11 @@ const editingIndex = ref<IndexInfo | null>(null)
 const indexFormRef = ref<FormInstance>()
 const indexForm = ref<IndexInfo>(createEmptyIndex(dbType.value))
 
-const indexRules: FormRules = {
-  name: [{ required: true, message: '请输入索引名', trigger: 'blur' }],
-  type: [{ required: true, message: '请选择索引类型', trigger: 'change' }],
-  columns: [{ required: true, message: '请选择字段', trigger: 'change', type: 'array', min: 1 }],
-}
+const indexRules = computed<FormRules>(() => ({
+  name: [{ required: true, message: t('schema.enterIndexNameReq'), trigger: 'blur' }],
+  type: [{ required: true, message: t('schema.selectIndexTypeReq'), trigger: 'change' }],
+  columns: [{ required: true, message: t('schema.selectColumnsReq'), trigger: 'change', type: 'array', min: 1 }],
+}))
 
 // 是否显示长度输入框
 const showLengthInput = computed(() => typeNeedsLength(columnForm.value.type, dbType.value))
@@ -843,14 +845,14 @@ const createTableDDL = computed(() => {
 async function copyDDL() {
   const text = createTableDDL.value
   if (!text) {
-    ElMessage.warning('暂无建表语句可复制')
+    ElMessage.warning(t('schema.noDDLToCopy'))
     return
   }
   try {
     await navigator.clipboard.writeText(text)
-    ElMessage.success('已复制到剪贴板')
+    ElMessage.success(t('schema.copiedToClipboard'))
   } catch {
-    ElMessage.error('复制失败')
+    ElMessage.error(t('schema.copyFailed'))
   }
 }
 
@@ -862,14 +864,14 @@ async function handleRenameTable() {
 
   try {
     const { value: newName } = await ElMessageBox.prompt(
-      '请输入新表名',
-      '重命名表',
+      t('schema.enterNewTableName'),
+      t('schema.renameTable'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
         inputValue: currentTableName.value,
         inputPattern: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-        inputErrorMessage: '表名格式不正确'
+        inputErrorMessage: t('schema.invalidTableName')
       }
     )
 
@@ -883,7 +885,7 @@ async function handleRenameTable() {
       new_name: newName
     })
 
-    ElMessage.success('表已重命名')
+    ElMessage.success(t('schema.tableRenamed'))
     // 更新URL参数
     const route = useRoute()
     const router = useRouter()
@@ -897,7 +899,7 @@ async function handleRenameTable() {
   } catch (error: unknown) {
     if ((error as { message?: string }).message !== 'cancel') {
       const err = error as { response?: { data?: { message?: string } }; message?: string }
-      ElMessage.error(err.response?.data?.message || err.message || '重命名表失败')
+      ElMessage.error(err.response?.data?.message || err.message || t('schema.renameTableFailed'))
     }
   }
 }
@@ -959,7 +961,7 @@ async function loadSchemaData(skipCheck = false) {
     indexes.value = indexesData
   } catch (error) {
     console.error('加载表结构失败:', error)
-    ElMessage.error('加载表结构失败')
+    ElMessage.error(t('schema.loadFailed'))
   } finally {
     loadingColumns.value = false
     loadingIndexes.value = false
@@ -1107,14 +1109,14 @@ function handleEditColumn(row: ColumnInfo) {
 // 删除字段
 async function handleDeleteColumn(row: ColumnInfo) {
   if (!connectionStore.currentConnection || !connectionStore.currentDatabase || !currentTableName.value) {
-    ElMessage.error('连接信息不完整')
+    ElMessage.error(t('schema.connectionIncomplete'))
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      `确定要删除字段 "${row.name}" 吗？此操作不可撤销。`,
-      '删除确认',
+      t('schema.deleteColumnConfirm', { name: row.name }),
+      t('schema.deleteConfirm'),
       { type: 'warning' }
     )
 
@@ -1129,11 +1131,11 @@ async function handleDeleteColumn(row: ColumnInfo) {
 
     // 重新加载表结构
     await loadSchemaData(true)
-    ElMessage.success('字段已删除')
+    ElMessage.success(t('schema.columnDeleted'))
   } catch (error: unknown) {
     if ((error as { message?: string }).message !== 'cancel') {
       const err = error as { response?: { data?: { message?: string } }; message?: string }
-      ElMessage.error(err.response?.data?.message || err.message || '删除字段失败')
+      ElMessage.error(err.response?.data?.message || err.message || t('schema.deleteColumnFailed'))
     }
   }
 }
@@ -1161,7 +1163,7 @@ async function handleSaveColumn() {
           column: columnForm.value
         }]
       })
-      ElMessage.success('字段已更新')
+      ElMessage.success(t('schema.columnUpdated'))
     } else {
       // 新增模式：添加字段
       await alterTable(connectionStore.currentConnection.id, {
@@ -1172,7 +1174,7 @@ async function handleSaveColumn() {
           column: columnForm.value
         }]
       })
-      ElMessage.success('字段已添加')
+      ElMessage.success(t('schema.columnAdded'))
     }
     
     // 重新加载表结构
@@ -1180,7 +1182,7 @@ async function handleSaveColumn() {
     columnDialogVisible.value = false
   } catch (error: unknown) {
     const err = error as { response?: { data?: { message?: string } }; message?: string }
-    ElMessage.error(err.response?.data?.message || err.message || '保存字段失败')
+    ElMessage.error(err.response?.data?.message || err.message || t('schema.saveColumnFailed'))
   }
 }
 
@@ -1201,14 +1203,14 @@ function handleEditIndex(row: IndexInfo) {
 // 删除索引
 async function handleDeleteIndex(row: IndexInfo) {
   if (!connectionStore.currentConnection || !connectionStore.currentDatabase || !currentTableName.value) {
-    ElMessage.error('连接信息不完整')
+    ElMessage.error(t('schema.connectionIncomplete'))
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      `确定要删除索引 "${row.name}" 吗？此操作不可撤销。`,
-      '删除确认',
+      t('schema.deleteIndexConfirm', { name: row.name }),
+      t('schema.deleteConfirm'),
       { type: 'warning' }
     )
 
@@ -1220,11 +1222,11 @@ async function handleDeleteIndex(row: IndexInfo) {
 
     // 重新加载表结构
     await loadSchemaData(true)
-    ElMessage.success('索引已删除')
+    ElMessage.success(t('schema.indexDeleted'))
   } catch (error: unknown) {
     if ((error as { message?: string }).message !== 'cancel') {
       const err = error as { response?: { data?: { message?: string } }; message?: string }
-      ElMessage.error(err.response?.data?.message || err.message || '删除索引失败')
+      ElMessage.error(err.response?.data?.message || err.message || t('schema.deleteIndexFailed'))
     }
   }
 }
@@ -1256,11 +1258,11 @@ async function handleSaveIndex() {
     
     // 重新加载表结构
     await loadSchemaData(true)
-    ElMessage.success(editingIndex.value ? '索引已更新' : '索引已添加')
+    ElMessage.success(editingIndex.value ? t('schema.indexUpdated') : t('schema.indexAdded'))
     indexDialogVisible.value = false
   } catch (error: unknown) {
     const err = error as { response?: { data?: { message?: string } }; message?: string }
-    ElMessage.error(err.response?.data?.message || err.message || '保存索引失败')
+    ElMessage.error(err.response?.data?.message || err.message || t('schema.saveIndexFailed'))
   }
 }
 </script>

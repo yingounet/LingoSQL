@@ -1,16 +1,16 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="创建表"
+    :title="t('dbAdmin.createTable')"
     width="560px"
     :close-on-click-modal="false"
     @closed="onClosed"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-      <el-form-item label="表名" prop="table_name">
-        <el-input v-model="form.table_name" placeholder="请输入表名" />
+      <el-form-item :label="t('dbAdmin.tableName')" prop="table_name">
+        <el-input v-model="form.table_name" :placeholder="t('dbAdmin.enterTableName')" />
       </el-form-item>
-      <el-form-item label="建表 DDL" prop="create_ddl">
+      <el-form-item :label="t('dbAdmin.createTableDDL')" prop="create_ddl">
         <el-input
           v-model="form.create_ddl"
           type="textarea"
@@ -20,9 +20,9 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
       <el-button type="primary" :loading="loading" @click="handleSubmit">
-        创建
+        {{ t('common.create') }}
       </el-button>
     </template>
   </el-dialog>
@@ -30,11 +30,13 @@
 
 <script setup lang="ts">
 import { ref, computed as vueComputed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { createTable } from '@/api/tableAdmin'
 import { useConnectionStore } from '@/store/connection'
 
+const { t } = useI18n()
 const connectionStore = useConnectionStore()
 const dbType = vueComputed(() => connectionStore.currentConnection?.db_type ?? 'mysql')
 
@@ -60,12 +62,12 @@ const form = ref({
   create_ddl: ''
 })
 
-const rules: FormRules = {
+const rules = vueComputed<FormRules>(() => ({
   table_name: [
-    { required: true, message: '请输入表名', trigger: 'blur' },
-    { min: 1, max: 64, message: '表名长度 1-64', trigger: 'blur' }
+    { required: true, message: t('dbAdmin.tableNameReq'), trigger: 'blur' },
+    { min: 1, max: 64, message: t('dbAdmin.tableNameLength'), trigger: 'blur' }
   ]
-}
+}))
 
 watch(visible, (v) => {
   if (v) {
@@ -84,7 +86,7 @@ async function handleSubmit() {
     if (!valid) return
     const connectionId = connectionStore.currentConnection?.id
     if (!connectionId) {
-      ElMessage.error('请先选择连接')
+      ElMessage.error(t('dbAdmin.selectConnectionFirst'))
       return
     }
     loading.value = true
@@ -97,7 +99,7 @@ async function handleSubmit() {
       visible.value = false
       emit('success')
     } catch (error: any) {
-      ElMessage.error(error.message || '创建表失败')
+      ElMessage.error(error.message || t('dbAdmin.createTableFailed'))
     } finally {
       loading.value = false
     }

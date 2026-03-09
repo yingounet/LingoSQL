@@ -8,35 +8,35 @@
       <template #actions>
         <el-button @click="handleRefresh" :loading="loadingDatabases">
           <el-icon><Refresh /></el-icon>
-          刷新
+          {{ t('common.refresh') }}
         </el-button>
-        <el-tooltip content="请先选择一个数据库" :disabled="!!currentDatabase" placement="bottom">
+        <el-tooltip :content="t('database.selectDbFirst')" :disabled="!!currentDatabase" placement="bottom">
           <span class="header-action-wrap">
             <el-button
               :disabled="!currentDatabase"
               @click="handleGoToSchema"
             >
               <el-icon><List /></el-icon>
-              表结构
+              {{ t('database.tableSchema') }}
             </el-button>
           </span>
         </el-tooltip>
-        <el-tooltip content="请先选择一个数据库" :disabled="!!currentDatabase" placement="bottom">
+        <el-tooltip :content="t('database.selectDbFirst')" :disabled="!!currentDatabase" placement="bottom">
           <span class="header-action-wrap">
             <el-button
               :disabled="!currentDatabase"
               @click="handleGoToRowData"
             >
               <el-icon><Grid /></el-icon>
-              表数据
+              {{ t('database.tableData') }}
             </el-button>
           </span>
         </el-tooltip>
-        <el-tooltip content="请先选择一个数据库" :disabled="!!currentDatabase" placement="bottom">
+        <el-tooltip :content="t('database.selectDbFirst')" :disabled="!!currentDatabase" placement="bottom">
           <span class="header-action-wrap">
             <el-button type="primary" @click="handleGoToQuery" :disabled="!currentDatabase">
               <el-icon><EditPen /></el-icon>
-              打开查询编辑器
+              {{ t('query.title') }}
             </el-button>
           </span>
         </el-tooltip>
@@ -45,9 +45,9 @@
     
     <!-- 无连接提示 -->
     <div class="empty-state" v-if="!currentConnection">
-      <el-empty description="请先选择一个数据库连接">
+      <el-empty :description="t('database.descNoConn')">
         <el-button type="primary" @click="handleGoToConnections">
-          前往连接管理
+          {{ t('history.goToConnections') }}
         </el-button>
       </el-empty>
     </div>
@@ -56,12 +56,12 @@
     <div class="database-content" v-else>
       <el-tabs v-model="activeTab" @tab-change="handleTabChange">
         <!-- 数据库列表Tab -->
-        <el-tab-pane label="数据库列表" name="list">
+        <el-tab-pane :label="t('nav.database')" name="list">
           <DatabaseListTab />
         </el-tab-pane>
         
         <!-- 管理Tab（有连接即显示，表管理对普通用户可用；库/用户/权限根据权限显示） -->
-        <el-tab-pane label="管理" name="admin">
+        <el-tab-pane :label="t('common.actions')" name="admin">
           <DatabaseAdminTabs :admin-permissions="adminPermissions" />
         </el-tab-pane>
       </el-tabs>
@@ -72,6 +72,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useConnectionStore } from '@/store/connection'
 import { useUrlState } from '@/composables/useUrlState'
@@ -87,6 +88,7 @@ import {
   Grid
 } from '@element-plus/icons-vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const connectionStore = useConnectionStore()
@@ -106,13 +108,13 @@ const currentDatabase = computed(() => connectionStore.currentDatabase)
 const loadingDatabases = computed(() => connectionStore.loadingDatabases)
 
 const pageTitle = computed(() => {
-  if (!currentConnection.value) return '数据库'
-  return `${currentConnection.value.name} - 数据库`
+  if (!currentConnection.value) return t('database.title')
+  return `${currentConnection.value.name} - ${t('database.title')}`
 })
 
 const pageDescription = computed(() => {
-  if (!currentConnection.value) return '请选择一个数据库连接'
-  return `展示 ${currentConnection.value.name} 服务器上的所有数据库`
+  if (!currentConnection.value) return t('database.descNoConn')
+  return t('database.descWithConn', { name: currentConnection.value.name })
 })
 
 // 检查管理权限（表管理不依赖此权限，普通用户也可建表）
@@ -129,7 +131,7 @@ async function checkAdminPermission() {
   } catch (error: any) {
     adminPermissions.value = null
     const requestId = error?.requestId ? `，请求ID: ${error.requestId}` : ''
-    ElMessage.error((error?.message || '权限检查失败') + requestId)
+    ElMessage.error((error?.message || t('common.error')) + requestId)
   } finally {
     checkingPermission.value = false
   }

@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="删除用户"
+    :title="t('userAdmin.deleteUser')"
     width="500px"
   >
     <div class="delete-confirm" v-if="user">
@@ -12,8 +12,8 @@
       >
         <template #title>
           <div class="alert-content">
-            <p>您确定要删除用户 <strong>{{ getUserLabel(user) }}</strong> 吗？</p>
-            <p class="warning-text">此操作不可恢复，请谨慎操作！</p>
+            <p>{{ t('userAdmin.deleteUserConfirm', { name: getUserLabel(user) }) }}</p>
+            <p class="warning-text">{{ t('dbAdmin.cannotUndo') }}</p>
           </div>
         </template>
       </el-alert>
@@ -21,20 +21,20 @@
       <div class="confirm-input" style="margin-top: 20px">
         <el-input
           v-model="confirmText"
-          :placeholder="`请输入 ${getUserLabel(user)} 以确认删除`"
+          :placeholder="t('userAdmin.enterNameToConfirm', { name: getUserLabel(user) })"
         />
       </div>
     </div>
     
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
       <el-button 
         type="danger" 
         @click="handleConfirm"
         :disabled="confirmText !== getUserLabel(user)"
         :loading="loading"
       >
-        确认删除
+        {{ t('dbAdmin.confirmDelete') }}
       </el-button>
     </template>
   </el-dialog>
@@ -42,7 +42,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { DatabaseUser } from '@/types/userAdmin'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean

@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="创建用户"
+    :title="t('userAdmin.createUserTitle')"
     width="500px"
     @close="handleClose"
   >
@@ -11,37 +11,37 @@
       :rules="rules"
       label-width="100px"
     >
-      <el-form-item label="用户名" prop="username">
-        <el-input v-model="form.username" placeholder="请输入用户名" />
+      <el-form-item :label="t('auth.username')" prop="username">
+        <el-input v-model="form.username" :placeholder="t('userAdmin.enterUsername')" />
       </el-form-item>
       
       <!-- MySQL选项 -->
       <el-form-item 
         v-if="dbType === 'mysql'" 
-        label="主机" 
+        :label="t('userAdmin.hostCol')" 
         prop="host"
       >
-        <el-select v-model="form.host" placeholder="请选择主机">
+        <el-select v-model="form.host" :placeholder="t('userAdmin.selectHost')">
           <el-option label="localhost" value="localhost" />
           <el-option label="%" value="%" />
           <el-option label="127.0.0.1" value="127.0.0.1" />
         </el-select>
       </el-form-item>
       
-      <el-form-item label="密码" prop="password">
+      <el-form-item :label="t('auth.password')" prop="password">
         <el-input
           v-model="form.password"
           type="password"
-          placeholder="请输入密码"
+          :placeholder="t('userAdmin.enterPasswordPlaceholder')"
           show-password
         />
       </el-form-item>
       
-      <el-form-item label="确认密码" prop="confirmPassword">
+      <el-form-item :label="t('auth.confirmPassword')" prop="confirmPassword">
         <el-input
           v-model="form.confirmPassword"
           type="password"
-          placeholder="请再次输入密码"
+          :placeholder="t('userAdmin.reenterPassword')"
           show-password
         />
       </el-form-item>
@@ -49,16 +49,16 @@
       <!-- PostgreSQL选项 -->
       <el-form-item 
         v-if="dbType === 'postgresql'" 
-        label="超级用户"
+        :label="t('userAdmin.superUser')"
       >
         <el-switch v-model="form.is_superuser" />
       </el-form-item>
     </el-form>
     
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
       <el-button type="primary" @click="handleSubmit" :loading="loading">
-        创建
+        {{ t('common.create') }}
       </el-button>
     </template>
   </el-dialog>
@@ -66,10 +66,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { createUser } from '@/api/userAdmin'
 import { useConnectionStore } from '@/store/connection'
 import type { CreateUserRequest } from '@/types/userAdmin'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -95,29 +98,29 @@ const form = reactive<CreateUserRequest & { confirmPassword: string }>({
 
 const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
   if (value !== form.password) {
-    callback(new Error('两次输入的密码不一致'))
+    callback(new Error(t('userAdmin.passwordMismatch')))
   } else {
     callback()
   }
 }
 
-const rules: FormRules = {
+const rules = computed<FormRules>(() => ({
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { pattern: /^[a-zA-Z_][a-zA-Z0-9_]*$/, message: '用户名只能包含字母、数字和下划线，且不能以数字开头', trigger: 'blur' }
+    { required: true, message: t('userAdmin.usernameReq'), trigger: 'blur' },
+    { pattern: /^[a-zA-Z_][a-zA-Z0-9_]*$/, message: t('userAdmin.usernamePattern'), trigger: 'blur' }
   ],
   host: [
-    { required: true, message: '请选择主机', trigger: 'change' }
+    { required: true, message: t('userAdmin.selectHostReq'), trigger: 'change' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+    { required: true, message: t('userAdmin.passwordReq'), trigger: 'blur' },
+    { min: 6, message: t('userAdmin.passwordMinLength'), trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
+    { required: true, message: t('userAdmin.confirmPasswordReq'), trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
   ]
-}
+}))
 
 const visible = computed({
   get: () => props.modelValue,
@@ -143,7 +146,7 @@ async function handleSubmit() {
     if (!valid) return
     
     if (!connectionStore.currentConnection) {
-      ElMessage.error('请先选择连接')
+      ElMessage.error(t('dbAdmin.selectConnectionFirst'))
       return
     }
     
@@ -161,11 +164,11 @@ async function handleSubmit() {
       }
       
       await createUser(connectionStore.currentConnection.id, request)
-      ElMessage.success('用户创建成功')
+      ElMessage.success(t('userAdmin.createUserSuccess'))
       emit('success')
       handleClose()
     } catch (error: any) {
-      ElMessage.error(error.message || '创建用户失败')
+      ElMessage.error(error.message || t('userAdmin.createUserFailed'))
     } finally {
       loading.value = false
     }
