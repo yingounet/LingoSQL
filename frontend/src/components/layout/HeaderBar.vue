@@ -12,7 +12,7 @@
         <el-icon :size="16"><Search /></el-icon>
         <input 
           type="text" 
-          placeholder="Search objects or queries..." 
+          :placeholder="t('header.searchPlaceholder')" 
           v-model="searchKeyword"
           @keyup.enter="handleSearch"
         />
@@ -46,13 +46,13 @@
     
     <!-- 右侧区域 -->
     <div class="header-right">
-      <el-button circle @click="toggleTheme" :title="theme === 'light' ? '切换到深色模式' : '切换到浅色模式'">
+      <el-button circle @click="toggleTheme" :title="theme === 'light' ? t('header.switchToDark') : t('header.switchToLight')">
         <el-icon><Sunny v-if="theme === 'dark'" /><Moon v-else /></el-icon>
       </el-button>
-      <button class="icon-btn" title="通知">
+      <button class="icon-btn" :title="t('header.notifications')">
         <el-icon :size="20"><Bell /></el-icon>
       </button>
-      <button class="icon-btn" title="设置">
+      <button class="icon-btn" :title="t('header.settings')" @click="$router.push('/settings')">
         <el-icon :size="20"><Setting /></el-icon>
       </button>
       <el-dropdown @command="handleUserCommand">
@@ -67,11 +67,11 @@
           <el-dropdown-menu>
             <el-dropdown-item command="profile">
               <el-icon><User /></el-icon>
-              个人设置
+              {{ t('header.profile') }}
             </el-dropdown-item>
             <el-dropdown-item command="logout" divided>
               <el-icon><SwitchButton /></el-icon>
-              退出登录
+              {{ t('header.logout') }}
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { useConnectionStore } from '@/store/connection'
@@ -114,16 +115,17 @@ const { theme, toggleTheme } = useTheme()
 
 const searchKeyword = ref('')
 
-// 导航菜单配置
-const navItems = [
-  { path: '/', label: 'Dashboard' },
-  { path: '/database', label: 'Database', requiresConnection: true },
-  { path: '/schema', label: 'Schema', requiresConnection: true, requiresDatabase: true },
-  { path: '/rowdata', label: 'Data', requiresConnection: true, requiresDatabase: true },
-  { path: '/history', label: 'History' },
-  { path: '/favorites', label: '收藏' },
-  { path: '/query', label: 'Query', requiresConnection: true }
-]
+// 导航菜单配置（使用 computed 以支持 i18n 切换）
+const { t } = useI18n()
+const navItems = computed(() => [
+  { path: '/', label: t('nav.dashboard') },
+  { path: '/database', label: t('nav.database'), requiresConnection: true },
+  { path: '/schema', label: t('nav.schema'), requiresConnection: true, requiresDatabase: true },
+  { path: '/rowdata', label: t('nav.data'), requiresConnection: true, requiresDatabase: true },
+  { path: '/history', label: t('nav.history') },
+  { path: '/favorites', label: t('nav.favorites') },
+  { path: '/query', label: t('nav.query'), requiresConnection: true }
+])
 const hasConnection = computed(() => !!connectionStore.currentConnection)
 const hasDatabase = computed(() => !!connectionStore.currentDatabase)
 
@@ -135,10 +137,10 @@ function isNavDisabled(item: { requiresConnection?: boolean; requiresDatabase?: 
 
 function getDisabledReason(item: { requiresConnection?: boolean; requiresDatabase?: boolean }) {
   if (item.requiresDatabase && !hasDatabase.value) {
-    return '请先选择数据库'
+    return t('header.selectDatabaseFirst')
   }
   if (item.requiresConnection && !hasConnection.value) {
-    return '请先建立连接'
+    return t('header.establishConnectionFirst')
   }
   return ''
 }

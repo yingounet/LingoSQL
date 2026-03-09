@@ -1,15 +1,35 @@
 <template>
   <div class="settings-page">
     <PageHeader
-      title="个人设置"
-      description="管理您的账户信息与登录密码"
+      :title="t('settings.title')"
+      :description="t('settings.description')"
     />
 
     <div class="settings-content">
+      <!-- 语言设置 -->
+      <el-card class="content-card">
+        <template #header>
+          <span>{{ t('settings.language') }}</span>
+        </template>
+        <el-select
+          :model-value="locale"
+          :placeholder="t('settings.language')"
+          style="width: 240px"
+          @change="handleLocaleChange"
+        >
+          <el-option
+            v-for="item in supportedLocales"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-card>
+
       <!-- 个人信息维护 -->
       <el-card class="content-card">
         <template #header>
-          <span>个人信息</span>
+          <span>{{ t('settings.profile') }}</span>
         </template>
         <el-form
           ref="profileFormRef"
@@ -18,18 +38,18 @@
           label-width="100px"
           @submit.prevent="handleSaveProfile"
         >
-          <el-form-item label="用户名" prop="username">
-            <el-input v-model="profileForm.username" placeholder="请输入用户名（至少3个字符）" />
+          <el-form-item :label="t('settings.username')" prop="username">
+            <el-input v-model="profileForm.username" :placeholder="t('settings.enterUsername')" />
           </el-form-item>
-          <el-form-item label="邮箱" prop="email">
-            <el-input v-model="profileForm.email" placeholder="请输入邮箱" />
+          <el-form-item :label="t('settings.email')" prop="email">
+            <el-input v-model="profileForm.email" :placeholder="t('settings.enterEmail')" />
           </el-form-item>
-          <el-form-item label="注册时间">
+          <el-form-item :label="t('settings.registrationTime')">
             <el-input :model-value="createdAtDisplay" disabled />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" :loading="profileLoading" @click="handleSaveProfile">
-              保存
+              {{ t('common.save') }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -38,7 +58,7 @@
       <!-- 登录密码修改 -->
       <el-card class="content-card">
         <template #header>
-          <span>修改密码</span>
+          <span>{{ t('settings.changePassword') }}</span>
         </template>
         <el-form
           ref="passwordFormRef"
@@ -47,33 +67,33 @@
           label-width="100px"
           @submit.prevent="handleChangePassword"
         >
-          <el-form-item label="当前密码" prop="current_password">
+          <el-form-item :label="t('settings.currentPassword')" prop="current_password">
             <el-input
               v-model="passwordForm.current_password"
               type="password"
-              placeholder="请输入当前密码"
+              :placeholder="t('settings.enterCurrentPassword')"
               show-password
             />
           </el-form-item>
-          <el-form-item label="新密码" prop="new_password">
+          <el-form-item :label="t('settings.newPassword')" prop="new_password">
             <el-input
               v-model="passwordForm.new_password"
               type="password"
-              placeholder="请输入新密码（至少6个字符）"
+              :placeholder="t('settings.enterNewPassword')"
               show-password
             />
           </el-form-item>
-          <el-form-item label="确认新密码" prop="confirm_password">
+          <el-form-item :label="t('settings.confirmPassword')" prop="confirm_password">
             <el-input
               v-model="passwordForm.confirm_password"
               type="password"
-              placeholder="请再次输入新密码"
+              :placeholder="t('settings.enterConfirmPassword')"
               show-password
             />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" :loading="passwordLoading" @click="handleChangePassword">
-              修改密码
+              {{ t('settings.changePassword') }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -84,13 +104,22 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import { useAuthStore } from '@/store/auth'
+import { useLocale } from '@/composables/useLocale'
 import { updateProfile, changePassword } from '@/api/auth'
 
+const { t } = useI18n()
+const { locale, changeLocale, supportedLocales } = useLocale()
 const authStore = useAuthStore()
+
+async function handleLocaleChange(newLocale: string) {
+  await changeLocale(newLocale as import('@/i18n').AppLocale)
+  ElMessage.success(t('common.success'))
+}
 
 const profileFormRef = ref<FormInstance>()
 const passwordFormRef = ref<FormInstance>()
@@ -121,7 +150,7 @@ const createdAtDisplay = computed(() => {
 
 function validateConfirmPassword(_rule: unknown, value: string, callback: (e?: Error) => void) {
   if (value !== passwordForm.new_password) {
-    callback(new Error('两次输入的新密码不一致'))
+    callback(new Error(t('settings.passwordMismatch')))
   } else {
     callback()
   }
@@ -129,25 +158,25 @@ function validateConfirmPassword(_rule: unknown, value: string, callback: (e?: E
 
 const profileRules: FormRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 50, message: '用户名长度在 3 到 50 个字符', trigger: 'blur' },
+    { required: true, message: t('auth.enterUsername'), trigger: 'blur' },
+    { min: 3, max: 50, message: t('settings.usernameLength'), trigger: 'blur' },
   ],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
+    { required: true, message: t('settings.enterEmail'), trigger: 'blur' },
+    { type: 'email', message: t('settings.invalidEmail'), trigger: 'blur' },
   ],
 }
 
 const passwordRules: FormRules = {
   current_password: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' },
+    { required: true, message: t('settings.enterCurrentPassword'), trigger: 'blur' },
   ],
   new_password: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少 6 个字符', trigger: 'blur' },
+    { required: true, message: t('settings.enterNewPassword'), trigger: 'blur' },
+    { min: 6, message: t('settings.enterNewPassword'), trigger: 'blur' },
   ],
   confirm_password: [
-    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { required: true, message: t('settings.enterConfirmPassword'), trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' },
   ],
 }
@@ -173,7 +202,7 @@ async function handleSaveProfile() {
         username: profileForm.username,
         email: profileForm.email,
       })
-      ElMessage.success('个人信息已更新')
+      ElMessage.success(t('settings.profileUpdated'))
       await authStore.fetchUser()
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '更新失败'
@@ -194,7 +223,7 @@ async function handleChangePassword() {
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password,
       })
-      ElMessage.success('密码已修改')
+      ElMessage.success(t('settings.passwordChanged'))
       passwordForm.current_password = ''
       passwordForm.new_password = ''
       passwordForm.confirm_password = ''

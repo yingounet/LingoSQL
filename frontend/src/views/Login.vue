@@ -2,7 +2,7 @@
   <div class="login-container">
     <el-card class="login-card">
       <template #header>
-        <h2>登录 LingoSQL</h2>
+        <h2>{{ t('auth.loginLingoSQL') }}</h2>
       </template>
       <el-form
         :model="form"
@@ -12,25 +12,25 @@
         class="login-form"
         @submit.prevent="handleLogin"
       >
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="请输入用户名" />
+        <el-form-item :label="t('auth.username')" prop="username">
+          <el-input v-model="form.username" :placeholder="t('auth.enterUsername')" />
         </el-form-item>
-        <el-form-item label="密码" prop="password">
+        <el-form-item :label="t('auth.password')" prop="password">
           <el-input
             v-model="form.password"
             type="password"
-            placeholder="请输入密码"
+            :placeholder="t('auth.enterPassword')"
             @keyup.enter="handleLogin"
           />
         </el-form-item>
         <div class="form-actions">
           <el-form-item>
             <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%">
-              登录
+              {{ t('auth.login') }}
             </el-button>
           </el-form-item>
           <el-form-item v-if="allowRegistration !== false" class="form-link-item">
-            <el-link type="primary" @click="$router.push('/register')">还没有账号？立即注册</el-link>
+            <el-link type="primary" @click="$router.push('/register')">{{ t('auth.noAccount') }}</el-link>
           </el-form-item>
         </div>
       </el-form>
@@ -40,12 +40,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/store/auth'
 import { getInstallStatus } from '@/api/install'
 import type { FormInstance, FormRules } from 'element-plus'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
@@ -71,8 +73,8 @@ const form = reactive({
 })
 
 const rules: FormRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  username: [{ required: true, message: () => t('auth.enterUsername'), trigger: 'blur' }],
+  password: [{ required: true, message: () => t('auth.enterPassword'), trigger: 'blur' }],
 }
 
 const handleLogin = async () => {
@@ -83,10 +85,10 @@ const handleLogin = async () => {
       loading.value = true
       try {
         await authStore.loginUser(form)
-        ElMessage.success('登录成功')
+        ElMessage.success(t('auth.loginSuccess'))
         router.push('/')
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.message || '登录失败')
+        ElMessage.error(error.response?.data?.message || t('auth.loginFailed'))
       } finally {
         loading.value = false
       }

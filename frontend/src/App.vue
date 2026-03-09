@@ -1,8 +1,11 @@
 <template>
-  <router-view />
+  <el-config-provider :locale="elementLocale">
+    <router-view />
+  </el-config-provider>
 </template>
 
 <script setup lang="ts">
+import { elementLocale } from '@/composables/useLocale'
 </script>
 
 <style>

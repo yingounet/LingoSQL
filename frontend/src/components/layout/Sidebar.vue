@@ -3,7 +3,7 @@
     <!-- 连接信息卡片 -->
     <div class="connection-card" v-if="currentConnection">
       <div class="card-header">
-        <span class="label">ACTIVE CONNECTION</span>
+        <span class="label">{{ t('sidebar.activeConnection') }}</span>
         <button class="collapse-btn" @click="$emit('collapse')">
           <el-icon :size="16">
             <ArrowLeft v-if="!collapsed" />
@@ -23,7 +23,7 @@
       <div class="database-selector" v-if="!collapsed">
         <el-select
           v-model="selectedDatabase"
-          placeholder="选择数据库"
+          :placeholder="t('sidebar.selectDatabase')"
           size="small"
           :loading="loadingDatabases"
           @change="handleDatabaseChange"
@@ -44,7 +44,7 @@
       <div class="tables-search">
         <el-input
           v-model="tableSearchKeyword"
-          placeholder="搜索表名..."
+          :placeholder="t('sidebar.searchTables')"
           size="small"
           clearable
           :prefix-icon="Search"
@@ -79,12 +79,12 @@
         <!-- 空状态 -->
         <div class="tables-empty" v-else-if="!loadingTables && tables.length === 0">
           <el-icon :size="32"><FolderOpened /></el-icon>
-          <span>暂无表</span>
+          <span>{{ t('sidebar.noTables') }}</span>
         </div>
         
         <!-- 搜索无结果 -->
         <div class="tables-empty" v-else-if="!loadingTables && filteredTables.length === 0">
-          <span>未找到匹配的表</span>
+          <span>{{ t('sidebar.noTablesFound') }}</span>
         </div>
       </div>
     </div>
@@ -92,38 +92,38 @@
     <!-- 表详情面板 -->
     <div class="table-info-panel" v-if="selectedTable && !collapsed" v-loading="loadingTableInfo">
       <div class="panel-header">
-        <span class="label">TABLE INFO</span>
+        <span class="label">{{ t('sidebar.tableInfo') }}</span>
       </div>
       <div class="table-info-name">{{ selectedTable }}</div>
       
       <template v-if="tableDetailInfo">
         <div class="info-list">
           <div class="info-item">
-            <span class="info-label">Rows</span>
+            <span class="info-label">{{ t('sidebar.rows') }}</span>
             <span class="info-value">{{ formatNumber(tableDetailInfo.rows) }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">Size</span>
+            <span class="info-label">{{ t('sidebar.size') }}</span>
             <span class="info-value">{{ formatSize(tableDetailInfo.data_length + tableDetailInfo.index_length) }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">Engine</span>
+            <span class="info-label">{{ t('sidebar.engine') }}</span>
             <span class="info-value">{{ tableDetailInfo.engine || '-' }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">Charset</span>
+            <span class="info-label">{{ t('sidebar.charset') }}</span>
             <span class="info-value">{{ tableDetailInfo.collation || '-' }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">Auto Inc</span>
+            <span class="info-label">{{ t('sidebar.autoInc') }}</span>
             <span class="info-value">{{ tableDetailInfo.auto_increment !== null ? formatNumber(tableDetailInfo.auto_increment) : '-' }}</span>
           </div>
           <div class="info-item" v-if="tableDetailInfo.comment">
-            <span class="info-label">Comment</span>
+            <span class="info-label">{{ t('sidebar.comment') }}</span>
             <span class="info-value comment" :title="tableDetailInfo.comment">{{ tableDetailInfo.comment }}</span>
           </div>
           <div class="info-item" v-if="tableDetailInfo.create_time">
-            <span class="info-label">Created</span>
+            <span class="info-label">{{ t('sidebar.created') }}</span>
             <span class="info-value">{{ tableDetailInfo.create_time }}</span>
           </div>
         </div>
@@ -133,7 +133,7 @@
     <!-- 无连接时显示 -->
     <div class="connection-card empty" v-if="!currentConnection">
       <div class="card-header">
-        <span class="label">NO CONNECTION</span>
+        <span class="label">{{ t('sidebar.noConnection') }}</span>
         <button class="collapse-btn" @click="$emit('collapse')">
           <el-icon :size="16">
             <ArrowLeft v-if="!collapsed" />
@@ -143,8 +143,8 @@
       </div>
       <div class="connection-info">
         <span class="status-dot disconnected"></span>
-        <span class="name" v-if="!collapsed">未选择连接</span>
-        <span class="connection-initial no-connection" v-else title="未选择连接">—</span>
+        <span class="name" v-if="!collapsed">{{ t('sidebar.noConnectionSelected') }}</span>
+        <span class="connection-initial no-connection" v-else :title="t('sidebar.noConnectionSelected')">—</span>
       </div>
     </div>
     
@@ -184,6 +184,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useConnectionStore } from '@/store/connection'
 import { useUrlState } from '@/composables/useUrlState'
@@ -204,6 +205,7 @@ defineEmits<{
   collapse: []
 }>()
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const connectionStore = useConnectionStore()
