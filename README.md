@@ -9,14 +9,15 @@ LingoSQL 是一个现代化的 Web 数据库管理工具，支持 MySQL 和 Post
 - ✅ 数据库连接管理
 - ✅ SQL 查询执行与结果展示
 - ✅ 查询历史记录
-- 🔄 查询收藏功能（开发中）
-- 🔄 数据库/表创建与管理（开发中）
+- ✅ 查询收藏功能
+- ✅ 数据库/表创建与管理、用户与权限管理
+- ✅ 数据导入/导出、审计日志
 - 🔄 AI 功能：自然语言生成 SQL（计划中）
 
 ## 技术栈
 
 ### 后端
-- Golang 1.21+
+- Golang 1.24+
 - Gin Web 框架
 - SQLite（服务端数据库）
 - MySQL/PostgreSQL 驱动
@@ -73,7 +74,7 @@ npm run dev
 
 1. 构建镜像：
 ```bash
-docker build -t lingosql:latest -f backend/Dockerfile .
+docker build -t lingosql:latest -f backend/Dockerfile ./backend
 ```
 
 2. 运行容器：
@@ -84,6 +85,7 @@ docker run -d \
   -v $(pwd)/data:/data \
   -e DB_PATH=/data/lingosql.db \
   -e JWT_SECRET=your-secret-key \
+  -e ENCRYPTION_KEY=your-encryption-key-32-chars-long!! \
   lingosql:latest
 ```
 
@@ -121,7 +123,7 @@ log:
 
 ## API 文档
 
-API 文档请参考 [docs/04-API设计.md](./docs/04-API设计.md)
+API 文档请参考 [__docs/04-API设计.md](./__docs/04-API设计.md)
 
 ## 项目结构
 
@@ -134,13 +136,13 @@ LingoSQL/
 │   └── pkg/         # 可复用包
 ├── frontend/        # 前端代码
 │   └── src/         # 源代码
-├── docs/            # 文档
+├── __docs/          # 设计文档
 └── data/            # 数据目录（自动创建）
 ```
 
 ## 开发计划
 
-详细开发计划请参考 [docs/09-开发计划.md](./docs/09-开发计划.md)
+详细开发计划请参考 [__docs/09-开发计划.md](./__docs/09-开发计划.md)
 
 ## 许可证
 

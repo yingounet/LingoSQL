@@ -92,6 +92,7 @@ func Load(configPath string) error {
 	_ = viper.BindEnv("rate_limit.enabled", "RATE_LIMIT_ENABLED")
 	_ = viper.BindEnv("backup.root_path", "BACKUP_ROOT_PATH")
 	_ = viper.BindEnv("mcp.enabled", "MCP_ENABLED")
+	_ = viper.BindEnv("database.path", "DB_PATH")
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {
