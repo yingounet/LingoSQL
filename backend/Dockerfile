@@ -14,7 +14,8 @@ COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o server ./cmd/server
 
 # 运行阶段（含 mysqldump、pg_dump 用于备份）
-FROM alpine:latest
+# 使用 alpine:3.23 以获取较新的 mariadb/busybox/zlib 等包（缓解 apk 相关 CVE）
+FROM alpine:3.23
 
 RUN apk --no-cache add ca-certificates mysql-client postgresql-client
 
