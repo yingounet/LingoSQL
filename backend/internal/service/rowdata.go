@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -12,6 +13,9 @@ import (
 	"lingosql/internal/utils"
 	"lingosql/pkg/db"
 )
+
+// safeNumericRegex 用于校验 IN 子句中的数值（防止 SQL 注入）
+var safeNumericRegex = regexp.MustCompile(`^-?[0-9]+\.?[0-9]*$`)
 
 type RowDataService struct {
 	connectionDAO    *sqlite.ConnectionDAO
@@ -51,9 +55,28 @@ func (s *RowDataService) getExecutor(connectionID, userID int, database string) 
 	return executor, conn, nil
 }
 
-func (s *RowDataService) buildWhereClause(filters []map[string]interface{}, dbType string) string {
-	if len(filters) == 0 {
+// escapeSQLString 转义 SQL 字符串字面量中的单引号和反斜杠
+func escapeSQLString(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	return strings.ReplaceAll(s, "'", "''")
+}
+
+// escapeINValue 安全处理 IN 子句中的值，防止 SQL 注入
+func escapeINValue(part string, dbType string) string {
+	part = strings.TrimSpace(part)
+	if part == "" {
 		return ""
+	}
+	if safeNumericRegex.MatchString(part) {
+		return part
+	}
+	escaped := escapeSQLString(part)
+	return "'" + escaped + "'"
+}
+
+func (s *RowDataService) buildWhereClause(filters []map[string]interface{}, dbType string) (string, error) {
+	if len(filters) == 0 {
+		return "", nil
 	}
 	var conditions []string
 	for _, filter := range filters {
@@ -63,6 +86,9 @@ func (s *RowDataService) buildWhereClause(filters []map[string]interface{}, dbTy
 
 		if field == "" {
 			continue
+		}
+		if err := utils.ValidateColumnName(field); err != nil {
+			return "", err
 		}
 
 		var cond string
@@ -74,29 +100,47 @@ func (s *RowDataService) buildWhereClause(filters []map[string]interface{}, dbTy
 
 		switch operator {
 		case "=", "!=", "<", ">", "<=", ">=":
-			cond = fmt.Sprintf("%s %s '%s'", field, operator, strings.ReplaceAll(value, "'", "''"))
+			cond = fmt.Sprintf("%s %s '%s'", field, operator, escapeSQLString(value))
 		case "LIKE":
-			cond = fmt.Sprintf("%s LIKE '%%%s%%'", field, strings.ReplaceAll(value, "'", "''"))
+			cond = fmt.Sprintf("%s LIKE '%%%s%%'", field, escapeSQLString(value))
 		case "IN":
-			cond = fmt.Sprintf("%s IN (%s)", field, value)
+			parts := strings.Split(value, ",")
+			var safeParts []string
+			for _, p := range parts {
+				if escaped := escapeINValue(p, dbType); escaped != "" {
+					safeParts = append(safeParts, escaped)
+				}
+			}
+			if len(safeParts) == 0 {
+				continue
+			}
+			cond = fmt.Sprintf("%s IN (%s)", field, strings.Join(safeParts, ", "))
 		case "IS NULL":
 			cond = fmt.Sprintf("%s IS NULL", field)
 		case "IS NOT NULL":
 			cond = fmt.Sprintf("%s IS NOT NULL", field)
 		default:
-			cond = fmt.Sprintf("%s = '%s'", field, strings.ReplaceAll(value, "'", "''"))
+			cond = fmt.Sprintf("%s = '%s'", field, escapeSQLString(value))
 		}
 		conditions = append(conditions, cond)
 	}
 	if len(conditions) == 0 {
-		return ""
+		return "", nil
 	}
-	return "WHERE " + strings.Join(conditions, " AND ")
+	return "WHERE " + strings.Join(conditions, " AND "), nil
 }
 
 // BatchInsertData 批量插入数据
 func (s *RowDataService) BatchInsertData(connectionID, userID int, req *models.BatchInsertRequest) (int, error) {
-	executor, _, err := s.getExecutor(connectionID, userID, req.Database)
+	if err := utils.ValidateTableName(req.Table); err != nil {
+		return 0, err
+	}
+	for _, col := range req.Columns {
+		if err := utils.ValidateColumnName(col); err != nil {
+			return 0, err
+		}
+	}
+	executor, conn, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return 0, err
 	}
@@ -118,15 +162,30 @@ func (s *RowDataService) BatchInsertData(connectionID, userID int, req *models.B
 				if val == nil {
 					valueStrs[j] = "NULL"
 				} else {
-					valStr := fmt.Sprintf("'%s'", strings.ReplaceAll(fmt.Sprintf("%v", val), "'", "''"))
+					valStr := fmt.Sprintf("'%s'", escapeSQLString(fmt.Sprintf("%v", val)))
 					valueStrs[j] = valStr
 				}
 			}
 			values = append(values, fmt.Sprintf("(%s)", strings.Join(valueStrs, ", ")))
 		}
-		columnsStr := strings.Join(req.Columns, ", ")
+		var columnsStr, tableQuoted string
+		if conn.DBType == "postgresql" {
+			tableQuoted = fmt.Sprintf("\"%s\"", req.Table)
+			cols := make([]string, len(req.Columns))
+			for j, c := range req.Columns {
+				cols[j] = fmt.Sprintf("\"%s\"", c)
+			}
+			columnsStr = strings.Join(cols, ", ")
+		} else {
+			tableQuoted = fmt.Sprintf("`%s`", req.Table)
+			cols := make([]string, len(req.Columns))
+			for j, c := range req.Columns {
+				cols[j] = fmt.Sprintf("`%s`", c)
+			}
+			columnsStr = strings.Join(cols, ", ")
+		}
 		valuesStr := strings.Join(values, ", ")
-		sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", req.Table, columnsStr, valuesStr)
+		sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableQuoted, columnsStr, valuesStr)
 
 		rowsAffected, _, err := executor.ExecuteUpdate(sql)
 		if err != nil {
@@ -152,6 +211,14 @@ func (s *RowDataService) BatchInsertData(connectionID, userID int, req *models.B
 
 // BatchUpdateData 批量更新数据
 func (s *RowDataService) BatchUpdateData(connectionID, userID int, req *models.BatchUpdateRequest) (int, error) {
+	if err := utils.ValidateTableName(req.Table); err != nil {
+		return 0, err
+	}
+	for k := range req.UpdateData {
+		if err := utils.ValidateColumnName(k); err != nil {
+			return 0, err
+		}
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return 0, err
@@ -162,16 +229,27 @@ func (s *RowDataService) BatchUpdateData(connectionID, userID int, req *models.B
 	var setParts []string
 	for k, v := range req.UpdateData {
 		if conn.DBType == "postgresql" {
-			setParts = append(setParts, fmt.Sprintf("\"%s\" = '%s'", k, strings.ReplaceAll(fmt.Sprintf("%v", v), "'", "''")))
+			setParts = append(setParts, fmt.Sprintf("\"%s\" = '%s'", k, escapeSQLString(fmt.Sprintf("%v", v))))
 		} else {
-			setParts = append(setParts, fmt.Sprintf("`%s` = '%s'", k, strings.ReplaceAll(fmt.Sprintf("%v", v), "'", "''")))
+			setParts = append(setParts, fmt.Sprintf("`%s` = '%s'", k, escapeSQLString(fmt.Sprintf("%v", v))))
 		}
 	}
 	setClause := strings.Join(setParts, ", ")
-	whereClause := s.buildWhereClause(req.Filters, conn.DBType)
+	whereClause, err := s.buildWhereClause(req.Filters, conn.DBType)
+	if err != nil {
+		return 0, err
+	}
+	if whereClause == "" {
+		return 0, errors.New("批量更新必须提供筛选条件")
+	}
 
-	sql := fmt.Sprintf("UPDATE `%s` SET %s %s", req.Table, setClause, whereClause)
-	rowsAffected, _, err := executor.ExecuteUpdate(sql)
+	var updateSQL string
+	if conn.DBType == "postgresql" {
+		updateSQL = fmt.Sprintf("UPDATE \"%s\" SET %s %s", req.Table, setClause, whereClause)
+	} else {
+		updateSQL = fmt.Sprintf("UPDATE `%s` SET %s %s", req.Table, setClause, whereClause)
+	}
+	rowsAffected, _, err := executor.ExecuteUpdate(updateSQL)
 	if err != nil {
 		return 0, err
 	}
@@ -180,7 +258,7 @@ func (s *RowDataService) BatchUpdateData(connectionID, userID int, req *models.B
 	history := &models.SystemQueryHistory{
 		ConnectionID:    connectionID,
 		UserID:         userID,
-		SQLQuery:       sql,
+		SQLQuery:       updateSQL,
 		OperationType:  "BATCH_UPDATE",
 		ExecutionTimeMs: executionTime,
 		RowsAffected:   rowsAffected,
@@ -193,19 +271,30 @@ func (s *RowDataService) BatchUpdateData(connectionID, userID int, req *models.B
 
 // BatchDeleteData 批量删除数据
 func (s *RowDataService) BatchDeleteData(connectionID, userID int, req *models.BatchDeleteRequest) (int, error) {
+	if err := utils.ValidateTableName(req.Table); err != nil {
+		return 0, err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return 0, err
 	}
 	startTime := time.Now()
 
-	whereClause := s.buildWhereClause(req.Filters, conn.DBType)
+	whereClause, err := s.buildWhereClause(req.Filters, conn.DBType)
+	if err != nil {
+		return 0, err
+	}
 	if whereClause == "" {
 		return 0, errors.New("批量删除必须提供筛选条件")
 	}
 
-	sql := fmt.Sprintf("DELETE FROM `%s` %s", req.Table, whereClause)
-	rowsAffected, _, err := executor.ExecuteUpdate(sql)
+	var deleteSQL string
+	if conn.DBType == "postgresql" {
+		deleteSQL = fmt.Sprintf("DELETE FROM \"%s\" %s", req.Table, whereClause)
+	} else {
+		deleteSQL = fmt.Sprintf("DELETE FROM `%s` %s", req.Table, whereClause)
+	}
+	rowsAffected, _, err := executor.ExecuteUpdate(deleteSQL)
 	if err != nil {
 		return 0, err
 	}
@@ -214,7 +303,7 @@ func (s *RowDataService) BatchDeleteData(connectionID, userID int, req *models.B
 	history := &models.SystemQueryHistory{
 		ConnectionID:    connectionID,
 		UserID:         userID,
-		SQLQuery:       sql,
+		SQLQuery:       deleteSQL,
 		OperationType:  "BATCH_DELETE",
 		ExecutionTimeMs: executionTime,
 		RowsAffected:   rowsAffected,
@@ -227,8 +316,21 @@ func (s *RowDataService) BatchDeleteData(connectionID, userID int, req *models.B
 
 // CompareData 数据对比
 func (s *RowDataService) CompareData(connectionID, userID int, req *models.CompareDataRequest) (*models.CompareDataResponse, error) {
-	// 简化实现：通过SQL查询对比数据
-	executor, _, err := s.getExecutor(connectionID, userID, req.Database1)
+	if err := utils.ValidateDatabaseName(req.Database1); err != nil {
+		return nil, err
+	}
+	if err := utils.ValidateTableName(req.Table1); err != nil {
+		return nil, err
+	}
+	if err := utils.ValidateTableName(req.Table2); err != nil {
+		return nil, err
+	}
+	for _, col := range req.KeyColumns {
+		if err := utils.ValidateColumnName(col); err != nil {
+			return nil, err
+		}
+	}
+	executor, conn, err := s.getExecutor(connectionID, userID, req.Database1)
 	if err != nil {
 		return nil, err
 	}
@@ -236,12 +338,28 @@ func (s *RowDataService) CompareData(connectionID, userID int, req *models.Compa
 	db2 := req.Database2
 	if db2 == "" {
 		db2 = req.Database1
+	} else if err := utils.ValidateDatabaseName(db2); err != nil {
+		return nil, err
 	}
 
-	// 构建对比SQL（简化版，实际需要更复杂的逻辑）
-	keyCols := strings.Join(req.KeyColumns, ", ")
-	sql1 := fmt.Sprintf("SELECT * FROM `%s`.`%s` ORDER BY %s", req.Database1, req.Table1, keyCols)
-	sql2 := fmt.Sprintf("SELECT * FROM `%s`.`%s` ORDER BY %s", db2, req.Table2, keyCols)
+	// 安全构建 ORDER BY 子句
+	var keyCols []string
+	for _, col := range req.KeyColumns {
+		if conn.DBType == "postgresql" {
+			keyCols = append(keyCols, fmt.Sprintf("\"%s\"", col))
+		} else {
+			keyCols = append(keyCols, fmt.Sprintf("`%s`", col))
+		}
+	}
+	orderBy := strings.Join(keyCols, ", ")
+	var sql1, sql2 string
+	if conn.DBType == "postgresql" {
+		sql1 = fmt.Sprintf("SELECT * FROM \"%s\".\"%s\" ORDER BY %s", req.Database1, req.Table1, orderBy)
+		sql2 = fmt.Sprintf("SELECT * FROM \"%s\".\"%s\" ORDER BY %s", db2, req.Table2, orderBy)
+	} else {
+		sql1 = fmt.Sprintf("SELECT * FROM `%s`.`%s` ORDER BY %s", req.Database1, req.Table1, orderBy)
+		sql2 = fmt.Sprintf("SELECT * FROM `%s`.`%s` ORDER BY %s", db2, req.Table2, orderBy)
+	}
 
 	cols1, rows1, _, err := executor.Execute(sql1)
 	if err != nil {
@@ -275,23 +393,41 @@ func (s *RowDataService) CompareData(connectionID, userID int, req *models.Compa
 
 // FindReplaceData 查找替换数据
 func (s *RowDataService) FindReplaceData(connectionID, userID int, req *models.FindReplaceRequest) (*models.FindReplaceResponse, error) {
+	if err := utils.ValidateTableName(req.Table); err != nil {
+		return nil, err
+	}
+	if err := utils.ValidateColumnName(req.Column); err != nil {
+		return nil, err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return nil, err
 	}
 	startTime := time.Now()
 
-	whereClause := s.buildWhereClause(req.Filters, conn.DBType)
+	whereClause, err := s.buildWhereClause(req.Filters, conn.DBType)
+	if err != nil {
+		return nil, err
+	}
 	additionalWhere := ""
 	if whereClause != "" {
 		additionalWhere = " AND " + strings.TrimPrefix(whereClause, "WHERE ")
 	}
 
+	findEscaped := escapeSQLString(req.FindValue)
+	replaceEscaped := escapeSQLString(req.ReplaceValue)
+
 	// 先查询匹配的行数
-	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM `%s` WHERE `%s` LIKE '%%%s%%' %s",
-		req.Table, req.Column, strings.ReplaceAll(req.FindValue, "'", "''"), additionalWhere)
+	var countSQL string
+	if conn.DBType == "postgresql" {
+		countSQL = fmt.Sprintf("SELECT COUNT(*) FROM \"%s\" WHERE \"%s\" LIKE '%%%s%%' %s",
+			req.Table, req.Column, findEscaped, additionalWhere)
+	} else {
+		countSQL = fmt.Sprintf("SELECT COUNT(*) FROM `%s` WHERE `%s` LIKE '%%%s%%' %s",
+			req.Table, req.Column, findEscaped, additionalWhere)
+	}
 	_, countRows, _, err := executor.Execute(countSQL)
-	matchedRows := 0
+	var matchedRows int
 	if err == nil && len(countRows) > 0 && len(countRows[0]) > 0 {
 		if val, ok := countRows[0][0].(int64); ok {
 			matchedRows = int(val)
@@ -303,15 +439,13 @@ func (s *RowDataService) FindReplaceData(connectionID, userID int, req *models.F
 	if conn.DBType == "postgresql" {
 		sql = fmt.Sprintf("UPDATE \"%s\" SET \"%s\" = REPLACE(\"%s\", '%s', '%s') WHERE \"%s\" LIKE '%%%s%%' %s",
 			req.Table, req.Column, req.Column,
-			strings.ReplaceAll(req.FindValue, "'", "''"),
-			strings.ReplaceAll(req.ReplaceValue, "'", "''"),
-			req.Column, strings.ReplaceAll(req.FindValue, "'", "''"), additionalWhere)
+			findEscaped, replaceEscaped,
+			req.Column, findEscaped, additionalWhere)
 	} else {
 		sql = fmt.Sprintf("UPDATE `%s` SET `%s` = REPLACE(`%s`, '%s', '%s') WHERE `%s` LIKE '%%%s%%' %s",
 			req.Table, req.Column, req.Column,
-			strings.ReplaceAll(req.FindValue, "'", "''"),
-			strings.ReplaceAll(req.ReplaceValue, "'", "''"),
-			req.Column, strings.ReplaceAll(req.FindValue, "'", "''"), additionalWhere)
+			findEscaped, replaceEscaped,
+			req.Column, findEscaped, additionalWhere)
 	}
 
 	rowsAffected, _, err := executor.ExecuteUpdate(sql)

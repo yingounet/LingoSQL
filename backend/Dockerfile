@@ -1,5 +1,5 @@
 # 构建阶段（modernc.org/sqlite 纯 Go 实现，无需 CGO）
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
