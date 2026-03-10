@@ -1,4 +1,3 @@
-# 构建阶段（modernc.org/sqlite 纯 Go 实现，无需 CGO）
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
@@ -13,11 +12,9 @@ COPY . .
 # 构建应用（CGO_ENABLED=0 纯静态二进制）
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o server ./cmd/server
 
-# 运行阶段（含 mysqldump、pg_dump 用于备份）
-# 使用 alpine:3.23 以获取较新的 mariadb/busybox/zlib 等包（缓解 apk 相关 CVE）
 FROM alpine:3.23
 
-RUN apk --no-cache add ca-certificates mysql-client postgresql-client
+RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
