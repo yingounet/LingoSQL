@@ -16,6 +16,7 @@ import (
 	"lingosql/internal/config"
 	"lingosql/internal/dao/sqlite"
 	"lingosql/internal/handler"
+	"lingosql/internal/mcp"
 	"lingosql/internal/middleware"
 	"lingosql/internal/service"
 	"lingosql/internal/utils"
@@ -173,6 +174,14 @@ func main() {
 	apiAuth := api.Group("")
 	apiAuth.Use(middleware.AuthMiddleware())
 	{
+		// MCP HTTP 端点（可选，由配置控制）
+		if cfg.MCP.Enabled {
+			mcpHandler := mcp.NewServer(connectionService, databaseService, tableService, queryService)
+			apiAuth.Any("/mcp", mcp.GinHandler(mcpHandler))
+			apiAuth.Any("/mcp/*path", mcp.GinHandler(mcpHandler))
+			logrus.Info("MCP HTTP 端点已启用: /api/mcp")
+		}
+
 		// 连接管理
 		connections := apiAuth.Group("/connections")
 		{

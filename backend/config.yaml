@@ -26,6 +26,10 @@ rate_limit:
   default_rpm: 120
   polling_rpm: 30
 
+# MCP 配置（Model Context Protocol，供 Cursor 等 IDE 通过 HTTP 连接）
+mcp:
+  enabled: true  # 是否启用 MCP HTTP 端点，Docker 部署建议开启
+
 # 备份配置
 backup:
   root_path: ./data/backups      # 备份存储目录，Docker 可挂载卷

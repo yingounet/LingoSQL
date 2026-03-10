@@ -19,6 +19,12 @@ type Config struct {
 	RateLimit  RateLimitConfig  `mapstructure:"rate_limit"`
 	Log        LogConfig        `mapstructure:"log"`
 	Backup     BackupConfig     `mapstructure:"backup"`
+	MCP        MCPConfig        `mapstructure:"mcp"`
+}
+
+// MCPConfig MCP 服务配置
+type MCPConfig struct {
+	Enabled bool `mapstructure:"enabled"` // 是否启用 MCP HTTP 端点（集成模式）
 }
 
 // BackupConfig 备份配置
@@ -85,6 +91,7 @@ func Load(configPath string) error {
 	_ = viper.BindEnv("rate_limit.polling_rpm", "POLLING_RATE_LIMIT_RPM")
 	_ = viper.BindEnv("rate_limit.enabled", "RATE_LIMIT_ENABLED")
 	_ = viper.BindEnv("backup.root_path", "BACKUP_ROOT_PATH")
+	_ = viper.BindEnv("mcp.enabled", "MCP_ENABLED")
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {
