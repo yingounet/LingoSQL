@@ -131,6 +131,21 @@ export async function batchDeleteData(params: BatchDeleteRequest): Promise<{ aff
 }
 
 /**
+ * 按主键删除行
+ */
+export interface DeleteByPrimaryKeysRequest {
+  connection_id: number
+  database: string
+  table: string
+  primary_keys: Record<string, unknown>[]
+}
+
+export async function deleteByPrimaryKeys(params: DeleteByPrimaryKeysRequest): Promise<{ affected_rows: number }> {
+  const response = await request.post<ApiResponse<{ affected_rows: number }>>('/tables/data/delete-by-keys', params)
+  return response.data
+}
+
+/**
  * 数据对比请求
  */
 export interface CompareDataRequest {

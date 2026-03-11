@@ -45,6 +45,14 @@ type BatchDeleteRequest struct {
 	Filters      []map[string]interface{} `json:"filters" binding:"required"` // 筛选条件
 }
 
+// DeleteByPrimaryKeysRequest 按主键删除请求
+type DeleteByPrimaryKeysRequest struct {
+	ConnectionID  int                       `json:"connection_id" binding:"required"`
+	Database      string                    `json:"database" binding:"required"`
+	Table         string                    `json:"table" binding:"required"`
+	PrimaryKeys   []map[string]interface{}  `json:"primary_keys" binding:"required"` // 主键值列表，每个元素为 {col1: val1, col2: val2}
+}
+
 // CompareDataRequest 数据对比请求
 type CompareDataRequest struct {
 	ConnectionID int    `json:"connection_id" binding:"required"`

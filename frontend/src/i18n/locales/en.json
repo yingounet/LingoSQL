@@ -470,7 +470,22 @@
     "multipleValuesComma": "Multiple values separated by comma",
     "enterFieldValue": "Enter {name}",
     "empty": "(empty)",
-    "fieldAlreadyInFilter": "Field \"{name}\" is already in filter conditions"
+    "fieldAlreadyInFilter": "Field \"{name}\" is already in filter conditions",
+    "addRow": "Add Row",
+    "editRow": "Edit Row",
+    "deleteRow": "Delete Row",
+    "selectRowsOrSetFilter": "Select rows to delete or set filter conditions first",
+    "batchDeleteSelectedConfirm": "Delete {n} selected records? This cannot be undone.",
+    "cannotDeleteNoPK": "Cannot delete: table has no primary key, use filter for batch delete",
+    "cannotAddNoPK": "Cannot add: table has no primary key",
+    "deleteRowConfirm": "Delete this row? This cannot be undone.",
+    "deleteRowConfirmTitle": "Delete Confirmation",
+    "deleteRowSuccess": "Deleted successfully",
+    "addRowSuccess": "Added successfully, {n} row(s) inserted",
+    "addRowFailed": "Add failed",
+    "noChangeToSave": "No changes to save",
+    "required": "Required",
+    "requiredField": "Please fill in {name}"
   },
   "history": {
     "title": "Query History",

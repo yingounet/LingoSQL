@@ -208,12 +208,16 @@
               </el-tag>
             </span>
             <div class="header-actions">
+              <el-button size="small" type="primary" @click="handleAddRow" :disabled="!currentTableName || columns.length === 0">
+                <el-icon><Plus /></el-icon>
+                {{ t('rowData.addRow') }}
+              </el-button>
               <el-button-group>
                 <el-button size="small" @click="handleBatchUpdate" :disabled="filterConditions.length === 0">
                   <el-icon><Edit /></el-icon>
                   {{ t('rowData.batchUpdate') }}
                 </el-button>
-                <el-button size="small" type="danger" @click="handleBatchDelete" :disabled="filterConditions.length === 0">
+                <el-button size="small" type="danger" @click="handleBatchDelete" :disabled="!canBatchDelete">
                   <el-icon><Delete /></el-icon>
                   {{ t('rowData.batchDelete') }}
                 </el-button>
@@ -236,15 +240,19 @@
         </template>
 
         <el-table 
+          ref="tableRef"
           :data="rows ?? []" 
           v-loading="loadingData"
           stripe
           border
           class="data-table"
           :max-height="tableMaxHeight"
-          row-key="id"
+          :row-key="getRowKey"
           @sort-change="handleSortChange"
+          @selection-change="handleSelectionChange"
         >
+          <!-- 多选列 -->
+          <el-table-column type="selection" width="48" fixed="left" :reserve-selection="false" />
           <!-- 序号列 -->
           <el-table-column type="index" label="#" width="60" fixed="left" :index="getRowIndex" />
 
@@ -300,6 +308,20 @@
                 </div>
                 <el-icon v-if="!col.isPrimary" class="edit-hint"><Edit /></el-icon>
               </div>
+            </template>
+          </el-table-column>
+
+          <!-- 行操作列（有主键时显示） -->
+          <el-table-column v-if="primaryKeyColumns.length > 0" label="" width="100" fixed="right" align="center">
+            <template #default="{ row }">
+              <el-button-group size="small">
+                <el-tooltip :content="t('rowData.editRow')" placement="top">
+                  <el-button :icon="Edit" link type="primary" @click="handleEditRow(row)" />
+                </el-tooltip>
+                <el-tooltip :content="t('rowData.deleteRow')" placement="top">
+                  <el-button :icon="Delete" link type="danger" @click="handleDeleteRow(row)" />
+                </el-tooltip>
+              </el-button-group>
             </template>
           </el-table-column>
 
@@ -515,6 +537,35 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 新增行 / 编辑行对话框 -->
+    <el-dialog
+      v-model="rowEditDialogVisible"
+      :title="rowEditDialogTitle"
+      width="600px"
+      destroy-on-close
+      @close="rowEditForm = {}"
+    >
+      <el-form :model="rowEditForm" label-width="120px">
+        <el-form-item
+          v-for="col in columns"
+          :key="col.name"
+          :label="col.name"
+          :required="col.isPrimary && isAddMode"
+        >
+          <el-input
+            v-model="rowEditForm[col.name]"
+            :placeholder="col.isPrimary && isAddMode ? t('rowData.required') : t('rowData.leaveEmptyToSkip', { name: col.name })"
+            :disabled="col.isPrimary && !isAddMode"
+            clearable
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="rowEditDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="doSaveRow">{{ t('common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -553,6 +604,8 @@ import {
   updateTableRow,
   batchUpdateData,
   batchDeleteData,
+  deleteByPrimaryKeys,
+  batchInsertData,
   compareData,
   findReplaceData,
   type ColumnDefFrontend as ColumnDef,
@@ -687,7 +740,32 @@ const LONG_TEXT_THRESHOLD = 50
 // Tooltip 最大字符数，避免超长内容导致巨大悬浮层
 const TOOLTIP_MAX_LENGTH = 300
 
+// 表格引用与勾选行
+const tableRef = ref()
+const selectedRows = ref<Record<string, unknown>[]>([])
+
+// 新增/编辑行
+const rowEditDialogVisible = ref(false)
+const rowEditForm = ref<Record<string, unknown>>({})
+const rowEditEditingRow = ref<Record<string, unknown> | null>(null)
+
 // ==================== 计算属性 ====================
+
+// 主键列
+const primaryKeyColumns = computed(() => columns.value.filter(c => c.isPrimary))
+
+// 是否为新增模式
+const isAddMode = computed(() => !rowEditEditingRow.value)
+
+// 行编辑对话框标题
+const rowEditDialogTitle = computed(() => 
+  isAddMode.value ? t('rowData.addRow') : t('rowData.editRow')
+)
+
+// 批量删除是否可用：已选行 > 0 或 有筛选条件
+const canBatchDelete = computed(() => 
+  selectedRows.value.length > 0 || filterConditions.value.length > 0
+)
 
 // 计算可见列
 const visibleColumns = computed(() => {
@@ -729,6 +807,32 @@ function formatNumber(num: number): string {
 // 获取行索引
 function getRowIndex(index: number): number {
   return (pagination.page - 1) * pagination.pageSize + index + 1
+}
+
+// 获取行唯一键（用于 selection 与 row-key）
+function getRowKey(row: Record<string, unknown>): string {
+  const pkCols = primaryKeyColumns.value
+  if (pkCols.length > 0) {
+    return pkCols.map(c => `${c.name}=${row[c.name] ?? ''}`).join('|')
+  }
+  // 无主键时用行索引 + 首列值
+  const idx = rows.value?.indexOf(row) ?? -1
+  const firstVal = columns.value[0] ? row[columns.value[0].name] : ''
+  return `_${idx}_${firstVal}`
+}
+
+// 从行中提取主键
+function extractPrimaryKey(row: Record<string, unknown>): Record<string, unknown> {
+  const pk: Record<string, unknown> = {}
+  primaryKeyColumns.value.forEach(c => {
+    pk[c.name] = row[c.name]
+  })
+  return pk
+}
+
+// 选择变化
+function handleSelectionChange(rows: Record<string, unknown>[]) {
+  selectedRows.value = rows
 }
 
 // 获取列宽度
@@ -1334,17 +1438,94 @@ async function doBatchUpdate() {
   }
 }
 
-// 批量删除
+// 批量删除（支持按选择删除或按筛选条件删除）
 async function handleBatchDelete() {
-  if (filterConditions.value.length === 0) {
-    ElMessage.warning(t('rowData.setFilterFirst'))
+  const bySelection = selectedRows.value.length > 0
+  const byFilter = filterConditions.value.length > 0
+
+  if (!bySelection && !byFilter) {
+    ElMessage.warning(t('rowData.selectRowsOrSetFilter'))
     return
   }
 
+  const n = bySelection ? selectedRows.value.length : pagination.total
+  const msg = bySelection
+    ? t('rowData.batchDeleteSelectedConfirm', { n: selectedRows.value.length })
+    : t('rowData.batchDeleteConfirm', { n })
+
+  try {
+    await ElMessageBox.confirm(msg, t('rowData.batchDeleteConfirmTitle'), { type: 'warning' })
+
+    if (!connectionStore.currentConnection || !connectionStore.currentDatabase || !currentTableName.value) {
+      return
+    }
+
+    let affected = 0
+    if (bySelection) {
+      const primaryKeys = selectedRows.value.map(extractPrimaryKey)
+      if (primaryKeyColumns.value.length === 0) {
+        ElMessage.error(t('rowData.cannotDeleteNoPK'))
+        return
+      }
+      const result = await deleteByPrimaryKeys({
+        connection_id: connectionStore.currentConnection.id,
+        database: connectionStore.currentDatabase,
+        table: currentTableName.value,
+        primary_keys: primaryKeys
+      })
+      affected = result.affected_rows
+    } else {
+      const filters = buildFilterArray()
+      const result = await batchDeleteData({
+        connection_id: connectionStore.currentConnection.id,
+        database: connectionStore.currentDatabase,
+        table: currentTableName.value,
+        filters
+      } as BatchDeleteRequest)
+      affected = result.affected_rows
+    }
+
+    ElMessage.success(t('rowData.batchDeleteSuccess', { n: affected }))
+    selectedRows.value = []
+    await loadTableData()
+  } catch (error: any) {
+    if (error.message !== 'cancel') {
+      ElMessage.error(error.message || t('rowData.batchDeleteFailed'))
+    }
+  }
+}
+
+// 新增行
+function handleAddRow() {
+  rowEditEditingRow.value = null
+  rowEditForm.value = {}
+  columns.value.forEach(col => {
+    rowEditForm.value[col.name] = ''
+  })
+  rowEditDialogVisible.value = true
+}
+
+// 编辑行
+function handleEditRow(row: Record<string, unknown>) {
+  if (primaryKeyColumns.value.length === 0) {
+    ElMessage.warning(t('rowData.cannotUpdateNoPK'))
+    return
+  }
+  rowEditEditingRow.value = row
+  rowEditForm.value = { ...row }
+  rowEditDialogVisible.value = true
+}
+
+// 删除单行
+async function handleDeleteRow(row: Record<string, unknown>) {
+  if (primaryKeyColumns.value.length === 0) {
+    ElMessage.error(t('rowData.cannotDeleteNoPK'))
+    return
+  }
   try {
     await ElMessageBox.confirm(
-      t('rowData.batchDeleteConfirm', { n: pagination.total }),
-      t('rowData.batchDeleteConfirmTitle'),
+      t('rowData.deleteRowConfirm'),
+      t('rowData.deleteRowConfirmTitle'),
       { type: 'warning' }
     )
 
@@ -1352,19 +1533,78 @@ async function handleBatchDelete() {
       return
     }
 
-    const filters = buildFilterArray()
-    const result = await batchDeleteData({
+    const result = await deleteByPrimaryKeys({
       connection_id: connectionStore.currentConnection.id,
       database: connectionStore.currentDatabase,
       table: currentTableName.value,
-      filters
-    } as BatchDeleteRequest)
+      primary_keys: [extractPrimaryKey(row)]
+    })
 
-    ElMessage.success(t('rowData.batchDeleteSuccess', { n: result.affected_rows }))
+    ElMessage.success(t('rowData.deleteRowSuccess'))
     await loadTableData()
   } catch (error: any) {
     if (error.message !== 'cancel') {
       ElMessage.error(error.message || t('rowData.batchDeleteFailed'))
+    }
+  }
+}
+
+// 保存行（新增或更新）
+async function doSaveRow() {
+  if (!connectionStore.currentConnection || !connectionStore.currentDatabase || !currentTableName.value) {
+    return
+  }
+
+  if (isAddMode.value) {
+    // 新增：主键若为自增可留空，非自增需填写（这里简化为按需填写）
+    const rowData = columns.value.map(col => {
+      const v = rowEditForm.value[col.name]
+      if (v === undefined || v === null || String(v).trim() === '') return null
+      return v
+    })
+    try {
+      const result = await batchInsertData({
+        connection_id: connectionStore.currentConnection.id,
+        database: connectionStore.currentDatabase,
+        table: currentTableName.value,
+        columns: columns.value.map(c => c.name),
+        data: [rowData]
+      })
+      ElMessage.success(t('rowData.addRowSuccess', { n: result.inserted_rows }))
+      rowEditDialogVisible.value = false
+      await loadTableData()
+    } catch (error: any) {
+      ElMessage.error(error.message || t('rowData.addRowFailed'))
+    }
+  } else {
+    // 更新
+    const pk = extractPrimaryKey(rowEditEditingRow.value!)
+    const updateData: Record<string, unknown> = {}
+    columns.value.forEach(col => {
+      if (!col.isPrimary) {
+        const v = rowEditForm.value[col.name]
+        if (v !== undefined) {
+          updateData[col.name] = v === '' ? null : v
+        }
+      }
+    })
+    if (Object.keys(updateData).length === 0) {
+      ElMessage.warning(t('rowData.noChangeToSave'))
+      return
+    }
+    try {
+      await updateTableRow(
+        connectionStore.currentConnection.id,
+        connectionStore.currentDatabase,
+        currentTableName.value,
+        pk,
+        updateData
+      )
+      ElMessage.success(t('rowData.fieldUpdated', { name: '' }))
+      rowEditDialogVisible.value = false
+      await loadTableData()
+    } catch (error: any) {
+      ElMessage.error(error.message || t('rowData.updateFailed'))
     }
   }
 }

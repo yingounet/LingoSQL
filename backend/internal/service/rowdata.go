@@ -314,6 +314,80 @@ func (s *RowDataService) BatchDeleteData(connectionID, userID int, req *models.B
 	return rowsAffected, nil
 }
 
+// DeleteByPrimaryKeys 按主键批量删除
+func (s *RowDataService) DeleteByPrimaryKeys(connectionID, userID int, req *models.DeleteByPrimaryKeysRequest) (int, error) {
+	if err := utils.ValidateTableName(req.Table); err != nil {
+		return 0, err
+	}
+	if len(req.PrimaryKeys) == 0 {
+		return 0, nil
+	}
+	executor, conn, err := s.getExecutor(connectionID, userID, req.Database)
+	if err != nil {
+		return 0, err
+	}
+	startTime := time.Now()
+
+	var orParts []string
+	for _, pk := range req.PrimaryKeys {
+		var andParts []string
+		for k, v := range pk {
+			if err := utils.ValidateColumnName(k); err != nil {
+				return 0, err
+			}
+			var cond string
+			if conn.DBType == "postgresql" {
+				field := fmt.Sprintf("\"%s\"", k)
+				if v == nil {
+					cond = field + " IS NULL"
+				} else {
+					cond = fmt.Sprintf("%s = '%s'", field, escapeSQLString(fmt.Sprintf("%v", v)))
+				}
+			} else {
+				field := fmt.Sprintf("`%s`", k)
+				if v == nil {
+					cond = field + " IS NULL"
+				} else {
+					cond = fmt.Sprintf("%s = '%s'", field, escapeSQLString(fmt.Sprintf("%v", v)))
+				}
+			}
+			andParts = append(andParts, cond)
+		}
+		if len(andParts) > 0 {
+			orParts = append(orParts, "("+strings.Join(andParts, " AND ")+")")
+		}
+	}
+	if len(orParts) == 0 {
+		return 0, nil
+	}
+	whereClause := "WHERE " + strings.Join(orParts, " OR ")
+
+	var deleteSQL string
+	if conn.DBType == "postgresql" {
+		deleteSQL = fmt.Sprintf("DELETE FROM \"%s\" %s", req.Table, whereClause)
+	} else {
+		deleteSQL = fmt.Sprintf("DELETE FROM `%s` %s", req.Table, whereClause)
+	}
+	rowsAffected, _, err := executor.ExecuteUpdate(deleteSQL)
+	if err != nil {
+		return 0, err
+	}
+
+	executionTime := int(time.Since(startTime).Milliseconds())
+	history := &models.SystemQueryHistory{
+		ConnectionID:    connectionID,
+		UserID:         userID,
+		SQLQuery:       deleteSQL,
+		OperationType:  "DELETE_BY_KEYS",
+		ExecutionTimeMs: executionTime,
+		RowsAffected:   rowsAffected,
+		Success:        true,
+	}
+	s.systemHistoryDAO.Create(history)
+
+	return rowsAffected, nil
+}
+
 // CompareData 数据对比
 func (s *RowDataService) CompareData(connectionID, userID int, req *models.CompareDataRequest) (*models.CompareDataResponse, error) {
 	if err := utils.ValidateDatabaseName(req.Database1); err != nil {

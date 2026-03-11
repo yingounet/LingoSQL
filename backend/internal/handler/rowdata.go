@@ -166,6 +166,25 @@ func (h *RowDataHandler) BatchDeleteData(c *gin.Context) {
 	utils.Success(c, gin.H{"affected_rows": affectedRows})
 }
 
+// DeleteByPrimaryKeys 按主键删除
+func (h *RowDataHandler) DeleteByPrimaryKeys(c *gin.Context) {
+	var req models.DeleteByPrimaryKeysRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+	userID, ok := GetUserID(c)
+	if !ok {
+		return
+	}
+	affectedRows, err := h.rowDataService.DeleteByPrimaryKeys(req.ConnectionID, userID, &req)
+	if err != nil {
+		utils.Error(c, 400, "删除失败: "+err.Error())
+		return
+	}
+	utils.Success(c, gin.H{"affected_rows": affectedRows})
+}
+
 // CompareData 数据对比
 func (h *RowDataHandler) CompareData(c *gin.Context) {
 	var req models.CompareDataRequest

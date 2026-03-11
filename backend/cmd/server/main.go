@@ -221,6 +221,7 @@ func main() {
 			tablesData.POST("/batch-insert", rowDataHandler.BatchInsertData)
 			tablesData.POST("/batch-update", rowDataHandler.BatchUpdateData)
 			tablesData.POST("/batch-delete", rowDataHandler.BatchDeleteData)
+			tablesData.POST("/delete-by-keys", rowDataHandler.DeleteByPrimaryKeys)
 			tablesData.POST("/compare", rowDataHandler.CompareData)
 			tablesData.POST("/find-replace", rowDataHandler.FindReplaceData)
 		}

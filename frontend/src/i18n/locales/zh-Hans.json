@@ -470,7 +470,22 @@
     "multipleValuesComma": "多个值用逗号分隔",
     "enterFieldValue": "输入 {name}",
     "empty": "(空)",
-    "fieldAlreadyInFilter": "字段 \"{name}\" 已在筛选条件中"
+    "fieldAlreadyInFilter": "字段 \"{name}\" 已在筛选条件中",
+    "addRow": "新增行",
+    "editRow": "编辑行",
+    "deleteRow": "删除行",
+    "selectRowsOrSetFilter": "请先勾选要删除的行，或设置筛选条件",
+    "batchDeleteSelectedConfirm": "确定要删除选中的 {n} 条记录吗？此操作不可撤销。",
+    "cannotDeleteNoPK": "无法删除：表没有主键，请使用筛选条件批量删除",
+    "cannotAddNoPK": "无法新增：表没有主键",
+    "deleteRowConfirm": "确定要删除该行吗？此操作不可撤销。",
+    "deleteRowConfirmTitle": "删除确认",
+    "deleteRowSuccess": "删除成功",
+    "addRowSuccess": "新增成功，插入 {n} 行",
+    "addRowFailed": "新增失败",
+    "noChangeToSave": "没有可保存的修改",
+    "required": "必填",
+    "requiredField": "请填写 {name}"
   },
   "history": {
     "title": "查询历史",
