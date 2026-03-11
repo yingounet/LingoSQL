@@ -5,7 +5,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY frontend/ ./frontend/
 WORKDIR /app/frontend
 RUN pnpm install --frozen-lockfile
-RUN mkdir -p ../backend && pnpm run build
+RUN mkdir -p ../backend && pnpm exec vite build
 
 # 阶段 2：构建后端
 FROM golang:1.25-alpine AS backend-builder
