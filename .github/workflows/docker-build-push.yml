@@ -59,11 +59,11 @@ jobs:
             type=semver,pattern={{major}}
             type=sha,prefix=,suffix=,format=short
 
-      # 构建并推送
+      # 构建并推送（context 为项目根目录，包含 frontend + backend）
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: .
           file: ./backend/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -422,6 +423,29 @@ func main() {
 			tasks.POST("/:id/cancel", taskHandler.CancelTask)
 			tasks.GET("/:id/download", taskHandler.DownloadTaskResult)
 		}
+	}
+
+	// 静态文件服务（前端 SPA）：当 web 目录存在时启用
+	webDir := "web"
+	if _, err := os.Stat(webDir); err == nil {
+		r.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			if strings.HasPrefix(path, "/api") {
+				c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "not found"})
+				return
+			}
+			fpath := filepath.Join(webDir, path)
+			if path == "/" {
+				fpath = filepath.Join(webDir, "index.html")
+			}
+			if _, err := os.Stat(fpath); err == nil {
+				c.File(fpath)
+				return
+			}
+			// SPA 回退：未匹配的路径返回 index.html
+			c.File(filepath.Join(webDir, "index.html"))
+		})
+		logrus.Info("前端静态文件服务已启用: / -> web/")
 	}
 
 	// 启动服务器（支持优雅退出）

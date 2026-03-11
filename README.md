@@ -72,9 +72,9 @@ npm run dev
 
 #### 使用 Docker
 
-1. 构建镜像：
+1. 构建镜像（在项目根目录执行）：
 ```bash
-docker build -t lingosql:latest -f backend/Dockerfile ./backend
+docker build -t lingosql:latest -f backend/Dockerfile .
 ```
 
 2. 运行容器：
