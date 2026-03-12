@@ -53,6 +53,9 @@ func (s *DbObjectsService) getExecutor(connectionID, userID int, database string
 
 // GetViews 获取视图列表
 func (s *DbObjectsService) GetViews(connectionID, userID int, database string) ([]models.ViewInfo, error) {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return nil, err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return nil, err
@@ -88,6 +91,12 @@ func (s *DbObjectsService) GetViews(connectionID, userID int, database string) (
 
 // CreateView 创建视图
 func (s *DbObjectsService) CreateView(connectionID, userID int, req *models.CreateViewRequest) error {
+	if err := utils.ValidateTableName(req.Name); err != nil {
+		return err
+	}
+	if err := utils.ValidateDatabaseName(req.Database); err != nil {
+		return err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return err
@@ -125,6 +134,12 @@ func (s *DbObjectsService) CreateView(connectionID, userID int, req *models.Crea
 
 // DropView 删除视图
 func (s *DbObjectsService) DropView(connectionID, userID int, database, name string) error {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return err
+	}
+	if err := utils.ValidateTableName(name); err != nil {
+		return err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return err
@@ -162,6 +177,9 @@ func (s *DbObjectsService) DropView(connectionID, userID int, database, name str
 
 // GetProcedures 获取存储过程列表
 func (s *DbObjectsService) GetProcedures(connectionID, userID int, database string) ([]models.ProcedureInfo, error) {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return nil, err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return nil, err
@@ -197,6 +215,9 @@ func (s *DbObjectsService) GetProcedures(connectionID, userID int, database stri
 
 // CreateProcedure 创建存储过程
 func (s *DbObjectsService) CreateProcedure(connectionID, userID int, req *models.CreateProcedureRequest) error {
+	if err := utils.ValidateDatabaseName(req.Database); err != nil {
+		return err
+	}
 	executor, _, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return err
@@ -228,6 +249,12 @@ func (s *DbObjectsService) CreateProcedure(connectionID, userID int, req *models
 
 // DropProcedure 删除存储过程
 func (s *DbObjectsService) DropProcedure(connectionID, userID int, database, name string) error {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return err
+	}
+	if err := utils.ValidateTableName(name); err != nil {
+		return err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return err
@@ -265,6 +292,12 @@ func (s *DbObjectsService) DropProcedure(connectionID, userID int, database, nam
 
 // ExecuteProcedure 执行存储过程
 func (s *DbObjectsService) ExecuteProcedure(connectionID, userID int, database, name string, parameters []interface{}) (interface{}, error) {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return nil, err
+	}
+	if err := utils.ValidateTableName(name); err != nil {
+		return nil, err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return nil, err
@@ -324,6 +357,9 @@ func (s *DbObjectsService) ExecuteProcedure(connectionID, userID int, database, 
 
 // GetFunctions 获取函数列表
 func (s *DbObjectsService) GetFunctions(connectionID, userID int, database string) ([]models.FunctionInfo, error) {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return nil, err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return nil, err
@@ -362,6 +398,9 @@ func (s *DbObjectsService) GetFunctions(connectionID, userID int, database strin
 
 // CreateFunction 创建函数
 func (s *DbObjectsService) CreateFunction(connectionID, userID int, req *models.CreateFunctionRequest) error {
+	if err := utils.ValidateDatabaseName(req.Database); err != nil {
+		return err
+	}
 	executor, _, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return err
@@ -393,6 +432,12 @@ func (s *DbObjectsService) CreateFunction(connectionID, userID int, req *models.
 
 // DropFunction 删除函数
 func (s *DbObjectsService) DropFunction(connectionID, userID int, database, name string) error {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return err
+	}
+	if err := utils.ValidateTableName(name); err != nil {
+		return err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return err
@@ -430,6 +475,9 @@ func (s *DbObjectsService) DropFunction(connectionID, userID int, database, name
 
 // GetTriggers 获取触发器列表
 func (s *DbObjectsService) GetTriggers(connectionID, userID int, database string) ([]models.TriggerInfo, error) {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return nil, err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return nil, err
@@ -472,6 +520,9 @@ func (s *DbObjectsService) GetTriggers(connectionID, userID int, database string
 
 // CreateTrigger 创建触发器
 func (s *DbObjectsService) CreateTrigger(connectionID, userID int, req *models.CreateTriggerRequest) error {
+	if err := utils.ValidateDatabaseName(req.Database); err != nil {
+		return err
+	}
 	executor, _, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return err
@@ -503,6 +554,12 @@ func (s *DbObjectsService) CreateTrigger(connectionID, userID int, req *models.C
 
 // DropTrigger 删除触发器
 func (s *DbObjectsService) DropTrigger(connectionID, userID int, database, name string) error {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return err
+	}
+	if err := utils.ValidateTableName(name); err != nil {
+		return err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return err
@@ -560,6 +617,9 @@ func (s *DbObjectsService) DropTrigger(connectionID, userID int, database, name 
 
 // GetEvents 获取事件列表（MySQL）
 func (s *DbObjectsService) GetEvents(connectionID, userID int, database string) ([]models.EventInfo, error) {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return nil, err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return nil, err
@@ -597,6 +657,9 @@ func (s *DbObjectsService) GetEvents(connectionID, userID int, database string) 
 
 // CreateEvent 创建事件（MySQL）
 func (s *DbObjectsService) CreateEvent(connectionID, userID int, req *models.CreateEventRequest) error {
+	if err := utils.ValidateDatabaseName(req.Database); err != nil {
+		return err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, req.Database)
 	if err != nil {
 		return err
@@ -631,6 +694,12 @@ func (s *DbObjectsService) CreateEvent(connectionID, userID int, req *models.Cre
 
 // DropEvent 删除事件（MySQL）
 func (s *DbObjectsService) DropEvent(connectionID, userID int, database, name string) error {
+	if err := utils.ValidateDatabaseName(database); err != nil {
+		return err
+	}
+	if err := utils.ValidateTableName(name); err != nil {
+		return err
+	}
 	executor, conn, err := s.getExecutor(connectionID, userID, database)
 	if err != nil {
 		return err
